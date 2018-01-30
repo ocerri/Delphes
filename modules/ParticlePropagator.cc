@@ -133,7 +133,7 @@ void ParticlePropagator::Process()
   Double_t tmp, discr, discr2;
   Double_t delta, gammam, omega, asinrho;
   Double_t xd, yd, zd, td, phid;
-  Double_t l, ld, d0, dz, p, ctgTheta, phip, etap, vz;
+  Double_t l, ld, d0, dz, p, ctgTheta, etap, vz;
   Double_t bsx, bsy, bsz;
 
   const Double_t c_light = 2.99792458E8;
@@ -253,7 +253,6 @@ void ParticlePropagator::Process()
     }
     else
     {
-
       // 1.  initial transverse momentum p_{T0}: Part->pt
       //     initial transverse momentum direction phi_0 = -atan(p_X0/p_Y0)
       //     relativistic gamma: gamma = E/mc^2; gammam = gamma * m
@@ -382,7 +381,7 @@ void ParticlePropagator::Process()
         candidate->Xd = xd*1.0E3;
         candidate->Yd = yd*1.0E3;
         candidate->Zd = zd*1.0E3;
-        candidate->td = candidatePosition.T() + td*c_light*1.0E3;
+        candidate->Td = candidatePosition.T() + td*c_light*1.0E3;
 
         candidate->AddCandidate(mother);
 

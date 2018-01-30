@@ -44,15 +44,20 @@ private:
   Float_t fBetaStop;
   Float_t fBetaPurge;
 
-  Double_t fMinPT;
 
   Float_t fVertexSpaceSize;
   Float_t fVertexTimeSize;
 
   Double_t fCoolingFactor;
+
   Double_t fDzCutOff;
   Double_t fD0CutOff;
   Double_t fDtCutOff; // for when the beamspot has time
+  Double_t fMinPT;
+
+  Double_t fUniqueTrkWeight;
+  Double_t fDzMerge;
+  Double_t fDtMerge;
 
   TObjArray *fInputArray;
   TIterator *fItInputArray;

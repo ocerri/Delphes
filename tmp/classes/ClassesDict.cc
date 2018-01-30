@@ -730,7 +730,7 @@ namespace ROOT {
       ::Tower *ptr = 0;
       static ::TVirtualIsAProxy* isa_proxy = new ::TInstrumentedIsAProxy< ::Tower >(0);
       static ::ROOT::TGenericClassInfo 
-         instance("Tower", ::Tower::Class_Version(), "classes/DelphesClasses.h", 469,
+         instance("Tower", ::Tower::Class_Version(), "classes/DelphesClasses.h", 470,
                   typeid(::Tower), ::ROOT::Internal::DefineBehavior(ptr, ptr),
                   &::Tower::Dictionary, isa_proxy, 4,
                   sizeof(::Tower) );
@@ -762,7 +762,7 @@ namespace ROOT {
       ::HectorHit *ptr = 0;
       static ::TVirtualIsAProxy* isa_proxy = new ::TInstrumentedIsAProxy< ::HectorHit >(0);
       static ::ROOT::TGenericClassInfo 
-         instance("HectorHit", ::HectorHit::Class_Version(), "classes/DelphesClasses.h", 498,
+         instance("HectorHit", ::HectorHit::Class_Version(), "classes/DelphesClasses.h", 499,
                   typeid(::HectorHit), ::ROOT::Internal::DefineBehavior(ptr, ptr),
                   &::HectorHit::Dictionary, isa_proxy, 4,
                   sizeof(::HectorHit) );
@@ -794,7 +794,7 @@ namespace ROOT {
       ::Candidate *ptr = 0;
       static ::TVirtualIsAProxy* isa_proxy = new ::TInstrumentedIsAProxy< ::Candidate >(0);
       static ::ROOT::TGenericClassInfo 
-         instance("Candidate", ::Candidate::Class_Version(), "classes/DelphesClasses.h", 522,
+         instance("Candidate", ::Candidate::Class_Version(), "classes/DelphesClasses.h", 523,
                   typeid(::Candidate), ::ROOT::Internal::DefineBehavior(ptr, ptr),
                   &::Candidate::Dictionary, isa_proxy, 4,
                   sizeof(::Candidate) );

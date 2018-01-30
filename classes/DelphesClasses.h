@@ -438,6 +438,7 @@ public:
   Float_t Xd; // X coordinate of point of closest approach to vertex
   Float_t Yd; // Y coordinate of point of closest approach to vertex
   Float_t Zd; // Z coordinate of point of closest approach to vertex
+  Float_t Td;
 
   Float_t L; // track path length
   Float_t D0; // track transverse impact parameter
@@ -579,7 +580,7 @@ public:
   Float_t Xd;
   Float_t Yd;
   Float_t Zd;
-  Float_t td;
+  Float_t Td;
   Float_t Ld;
 
   // tracking resolution

@@ -41,26 +41,29 @@ static const Double_t ns  = 1.;
 static const Double_t s = 1.e+9 *ns;
 static const Double_t c_light   = 2.99792458e+8 * m/s;
 
-struct track_t
+struct tracks_t
 {
-  double z;      // z-coordinate at point of closest approach to the beamline
-  double t;      // t-coordinate at point of closest approach to the beamline
-  double t_outer; //time at the outer track
+  std::vector<double> z;      // z-coordinate at point of closest approach to the beamline
+  std::vector<double> t;      // t-coordinate at point of closest approach to the beamline
+  std::vector<double> t_outer; //time at the outer track
 
-  double l; //real path lenght from production point to outer traker
-  double ld; // path lenght from closest approach to beam axis to outer tracker
+  std::vector<double> l; //real path lenght from production point to outer traker
+  std::vector<double> ld; // path lenght from closest approach to beam axis to outer tracker
 
-  double dz2;    // square of the error of z(pca)
-  double dtz;    // covariance of z-t
-  double dt2;    // square of the error of t(pca)
-  Candidate *tt; // a pointer to the Candidate Track
-  double Z;      // Z[i]   for DA clustering
-  double pi;     // track weight
-  double pt;
-  double eta;
-  double phi;
+  std::vector<double> dz2;    // square of the error of z(pca)
+  std::vector<double> dt2;    // square of the error of t(pca)
+  std::vector<Candidate> *tt; // a pointer to the Candidate Track
+  std::vector<double> Z;      // Z[i]   for DA clustering
+  std::vector<double> pi;     // track weight
+  std::vector<double> pt;
+  std::vector<double> pz;
 
-  int PID;
+  std::vector<int> PID;
+
+  void AddItem()
+  {
+
+  }
 };
 
 struct vertex_t
@@ -79,18 +82,18 @@ struct vertex_t
   double Tc;
 };
 
-static bool split(double beta, std::vector<track_t> &tks, std::vector<vertex_t> &y);
-static double update1(double beta, std::vector<track_t> &tks, std::vector<vertex_t> &y);
-static double update2(double beta, std::vector<track_t> &tks, std::vector<vertex_t> &y, double &rho0, const double dzCutOff);
-static void dump(const double beta, const std::vector<vertex_t> & y, const std::vector<track_t> & tks);
+static bool split(double beta, std::vector<tracks_t> &tks, std::vector<vertex_t> &y);
+static double update1(double beta, std::vector<tracks_t> &tks, std::vector<vertex_t> &y);
+static double update2(double beta, std::vector<tracks_t> &tks, std::vector<vertex_t> &y, double &rho0, const double dzCutOff);
+static void dump(const double beta, const std::vector<vertex_t> & y, const std::vector<tracks_t> & tks);
 static bool merge(std::vector<vertex_t> &);
 static bool merge(std::vector<vertex_t> &, double &);
-static bool purge(std::vector<vertex_t> &, std::vector<track_t> & , double &, const double, const double);
+static bool purge(std::vector<vertex_t> &, std::vector<tracks_t> & , double &, const double, const double);
 static void splitAll(std::vector<vertex_t> &y);
-static double beta0(const double betamax, std::vector<track_t> &tks, std::vector<vertex_t> &y, const double coolingFactor);
-static double Eik(const track_t &t, const vertex_t &k);
+static double beta0(const double betamax, std::vector<tracks_t> &tks, std::vector<vertex_t> &y, const double coolingFactor);
+static double Eik(const tracks_t &t, const vertex_t &k);
 
-static bool recTrackLessZ1(const track_t & tk1, const track_t & tk2)
+static bool recTrackLessZ1(const tracks_t & tk1, const tracks_t & tk2)
 {
   return tk1.z < tk2.z;
 }
@@ -100,9 +103,23 @@ using namespace std;
 //------------------------------------------------------------------------------
 
 VertexFinderDAClusterizerZT::VertexFinderDAClusterizerZT() :
-  fVerbose(0), fMinPT(0), fVertexSpaceSize(0), fVertexTimeSize(0),
-  fUseTc(0), fBetaMax(0), fBetaStop(0), fCoolingFactor(0),
-  fMaxIterations(0), fDzCutOff(0), fD0CutOff(0), fDtCutOff(0)
+  fVerbose(0),
+  fMaxIterations(0),
+  fMinTrackWeight(0),
+  fUseTc(0),
+  fBetaMax(0),
+  fBetaStop(0),
+  fBetaPurge(0),
+  fVertexSpaceSize(0),
+  fVertexTimeSize(0),
+  fCoolingFactor(0),
+  fDzCutOff(0),
+  fD0CutOff(0),
+  fDtCutOff(0),
+  fMinPT(0),
+  fUniqueTrkWeight(0),
+  fDzMerge(0),
+  fDtMerge(0)
 {
 }
 
@@ -126,18 +143,26 @@ void VertexFinderDAClusterizerZT::Init()
   fBetaStop        = GetDouble("BetaStop", 1.0);
   fBetaPurge       = GetDouble("BetaStop", 1.0);
 
-  fMinPT = GetDouble("MinPT", 0.1);
   fVertexSpaceSize = GetDouble("VertexSpaceSize", 0.5); //in mm
-  fVertexTimeSize = GetDouble("VertexTimeSize", 10E-12); //in s
-  fCoolingFactor = GetDouble("CoolingFactor", 0.8);
-  fDzCutOff      = GetDouble("DzCutOff", 40);  // Adaptive Fitter uses 30 mm but that appears to be a bit tight here sometimes
-  fD0CutOff      = GetDouble("D0CutOff", 30);
-  fDtCutOff      = GetDouble("DtCutOff", 100E-12);  // dummy
+  fVertexTimeSize  = GetDouble("VertexTimeSize", 10E-12); //in s
 
+  fCoolingFactor   = GetDouble("CoolingFactor", 0.8);
+
+  fDzCutOff        = GetDouble("DzCutOff", 40);  // Adaptive Fitter uses 30 mm but that appears to be a bit tight here sometimes
+  fD0CutOff        = GetDouble("D0CutOff", 30);
+  fDtCutOff        = GetDouble("DtCutOff", 100E-12);  // dummy
+  fMinPT           = GetDouble("MinPT", 0.1);
+
+  !!FIX defaul values
+  fUniqueTrkWeight = GetDouble("UniqueTrkWeight", 1);
+  fDzMerge         = GetDouble("DzMerge", 30);
+  fDtMerge         = GetDouble("D0CutOff", 30);
+
+  !!FIX UNITS
   // convert stuff in cm, ns
   fVertexSpaceSize /= 10.0;
   fVertexTimeSize *= 1E9;
-  fDzCutOff       /= 10.0;   // Adaptive Fitter uses 3.0 but that appears to be a bit tight here sometimes
+  fDzCutOff       /= 10.0;
   fD0CutOff       /= 10.0;
 
   fInputArray = ImportArray(GetString("InputArray", "TrackSmearing/tracks"));
@@ -145,6 +170,24 @@ void VertexFinderDAClusterizerZT::Init()
 
   fOutputArray = ExportArray(GetString("OutputArray", "tracks"));
   fVertexOutputArray = ExportArray(GetString("VertexOutputArray", "vertices"));
+
+  if (fBetaMax > fBetaPurge)
+  {
+    fBetaPurge = fBetaMax;
+    if (fVerbose)
+    {
+      cout << "BetaPurge set to " << fBetaPurge << endl;
+    }
+  }
+
+  if (fBetaPurge > fBetaStop)
+  {
+    fBetaStop = TMath::Min(1., fBetaMax);
+    if (fVerbose)
+    {
+      cout << "BetaPurge set to " << fBetaPurge << endl;
+    }
+  }
 }
 
 //------------------------------------------------------------------------------
@@ -355,8 +398,8 @@ vector< Candidate* > VertexFinderDAClusterizerZT::vertices()
   UInt_t clusterIndex = 0;
   vector< Candidate* > clusters;
 
-  vector<track_t> tks;
-  track_t tr;
+  vector<tracks_t> tks;
+  tracks_t tr;
   Double_t z, dz, t, l, dt, d0, d0error;
 
   // loop over input tracks
@@ -384,7 +427,6 @@ vector< Candidate* > VertexFinderDAClusterizerZT::vertices()
     tr.eta = eta;
     tr.phi = phi;
     tr.t = t; //
-    tr.dtz = 0.;
     dt = candidate->ErrorT/c_light;
     tr.dt2 = dt*dt + fVertexTimeSize*fVertexTimeSize;   // the ~injected~ timing error plus a small minimum vertex size in time
     if(fD0CutOff>0)
@@ -419,7 +461,7 @@ vector< Candidate* > VertexFinderDAClusterizerZT::vertices()
     //loop over input tracks
 
 
-   for(std::vector<track_t>::const_iterator it=tks.begin(); it!=tks.end(); it++){
+   for(std::vector<tracks_t>::const_iterator it=tks.begin(); it!=tks.end(); it++){
      double z = it->z;
      double pt=it->pt;
      double eta=it->eta;
@@ -539,7 +581,7 @@ vector< Candidate* > VertexFinderDAClusterizerZT::vertices()
     double time = k->t;
     double z = k->z;
     //vector< reco::TransientTrack > vertexTracks;
-    //double max_track_time_err2 = 0;
+    //double max_tracks_time_err2 = 0;
     double mean = 0.;
     double expv_x2 = 0.;
     double normw = 0.;
@@ -588,18 +630,18 @@ vector< Candidate* > VertexFinderDAClusterizerZT::vertices()
 
 //------------------------------------------------------------------------------
 
-static double Eik(const track_t & t, const vertex_t &k)
+static double Eik(const tracks_t & t, const vertex_t &k)
 {
   return std::pow(t.z-k.z,2.)/t.dz2 + std::pow(t.t - k.t,2.)/t.dt2;
 }
 
 //------------------------------------------------------------------------------
 
-static void dump(const double beta, const vector<vertex_t> &y, const vector<track_t> &tks0)
+static void dump(const double beta, const vector<vertex_t> &y, const vector<tracks_t> &tks0)
 {
   // copy and sort for nicer printout
-  vector<track_t> tks;
-  for(vector<track_t>::const_iterator t=tks0.begin(); t!=tks0.end(); t++){tks.push_back(*t); }
+  vector<tracks_t> tks;
+  for(vector<tracks_t>::const_iterator t=tks0.begin(); t!=tks0.end(); t++){tks.push_back(*t); }
   std::stable_sort(tks.begin(), tks.end(), recTrackLessZ1);
 
   cout << "-----DAClusterizerInZT::dump ----" << endl;
@@ -660,7 +702,7 @@ static void dump(const double beta, const vector<vertex_t> &y, const vector<trac
 
 //------------------------------------------------------------------------------
 
-static double update1(double beta, vector<track_t> &tks, vector<vertex_t> &y)
+static double update1(double beta, vector<tracks_t> &tks, vector<vertex_t> &y)
 {
   //update weights and vertex positions
   // mass constrained annealing without noise
@@ -731,7 +773,7 @@ static double update1(double beta, vector<track_t> &tks, vector<vertex_t> &y)
 
 //------------------------------------------------------------------------------
 
-static double update2(double beta, vector<track_t> &tks, vector<vertex_t> &y, double &rho0, double dzCutOff)
+static double update2(double beta, vector<tracks_t> &tks, vector<vertex_t> &y, double &rho0, double dzCutOff)
 {
   // MVF style, no more vertex weights, update tracks weights and vertex positions, with noise
   // returns the squared sum of changes of vertex positions
@@ -857,7 +899,7 @@ static bool merge(vector<vertex_t> &y, double &beta)
 
 //------------------------------------------------------------------------------
 
-static bool purge(vector<vertex_t> &y, vector<track_t> &tks, double & rho0, const double beta, const double dzCutOff)
+static bool purge(vector<vertex_t> &y, vector<tracks_t> &tks, double & rho0, const double beta, const double dzCutOff)
 {
   // eliminate clusters with only one significant/unique track
   if(y.size()<2)  return false;
@@ -895,7 +937,7 @@ static bool purge(vector<vertex_t> &y, vector<track_t> &tks, double & rho0, cons
 
 //------------------------------------------------------------------------------
 
-static double beta0(double betamax, vector<track_t> &tks, vector<vertex_t> &y, const double coolingFactor)
+static double beta0(double betamax, vector<tracks_t> &tks, vector<vertex_t> &y, const double coolingFactor)
 {
 
   double T0=0;  // max Tc for beta=0
@@ -940,7 +982,7 @@ static double beta0(double betamax, vector<track_t> &tks, vector<vertex_t> &y, c
 
 //------------------------------------------------------------------------------
 
-static bool split(double beta, vector<track_t> &tks, vector<vertex_t> &y)
+static bool split(double beta, vector<tracks_t> &tks, vector<vertex_t> &y)
 {
   // split only critical vertices (Tc >~ T=1/beta   <==>   beta*Tc>~1)
   // an update must have been made just before doing this (same beta, no merging)

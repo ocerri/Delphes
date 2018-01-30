@@ -113,7 +113,7 @@ void TimeSmearing::Process()
     else tf_smeared = -1;
 
     double beta_particle = 1;
-    ti = tf_smeared - candidate->L*1.0E-3/(c_light*beta_particle);
+    ti = tf_smeared - candidate->Ld*1.0E-3/(c_light*beta_particle);
 
     mother = candidate;
     candidate = static_cast<Candidate*>(candidate->Clone());

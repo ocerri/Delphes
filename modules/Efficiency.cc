@@ -43,7 +43,7 @@
 #include "TDatabasePDG.h"
 #include "TLorentzVector.h"
 
-#include <algorithm> 
+#include <algorithm>
 #include <stdexcept>
 #include <iostream>
 #include <sstream>
@@ -93,7 +93,7 @@ void Efficiency::Finish()
 //------------------------------------------------------------------------------
 
 void Efficiency::Process()
-{ 
+{
   Candidate *candidate;
   Double_t pt, eta, phi, e;
 
@@ -109,7 +109,7 @@ void Efficiency::Process()
 
     // apply an efficency formula
     if(gRandom->Uniform() > fFormula->Eval(pt, eta, phi, e)) continue;
-    
+
     fOutputArray->Add(candidate);
   }
 }

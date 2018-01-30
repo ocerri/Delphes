@@ -363,6 +363,7 @@ void TreeWriter::ProcessTracks(ExRootTreeBranch *branch, TObjArray *array)
     entry->Xd = candidate->Xd;
     entry->Yd = candidate->Yd;
     entry->Zd = candidate->Zd;
+    entry->Td = candidate->Td*1.0E-3/c_light;
 
     const TLorentzVector &momentum = candidate->Momentum;
 
@@ -376,6 +377,7 @@ void TreeWriter::ProcessTracks(ExRootTreeBranch *branch, TObjArray *array)
     eta = (cosTheta == 1.0 ? signz*999.9 : momentum.Eta());
     rapidity = (cosTheta == 1.0 ? signz*999.9 : momentum.Rapidity());
 
+    entry->P = p;
     entry->PT  = pt;
     entry->Eta = eta;
     entry->Phi = phi;
