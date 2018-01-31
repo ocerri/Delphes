@@ -364,6 +364,7 @@ void ParticlePropagator::Process()
         candidate->DZ = dz*1.0E3;
         candidate->P  = p;
         candidate->PT = pt;
+        //Momentum variables at closest approach
         candidate->CtgTheta = ctgTheta;
         candidate->Phi = phid;
 
@@ -373,6 +374,7 @@ void ParticlePropagator::Process()
         candidate->InitialPosition = candidatePosition;
         candidate->Position.SetXYZT(x_t*1.0E3, y_t*1.0E3, z_t*1.0E3, candidatePosition.T() + t*c_light*1.0E3);
 
+        //Momentum at closest approach
         candidate->Momentum = candidateMomentum;
 
         candidate->L = l*1.0E3;

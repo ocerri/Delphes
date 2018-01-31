@@ -273,7 +273,7 @@ void TreeWriter::ProcessVertices(ExRootTreeBranch *branch, TObjArray *array)
     xError = candidate->PositionError.X ();
     yError = candidate->PositionError.Y ();
     zError = candidate->PositionError.Z ();
-    tError = candidate->PositionError.T ()*1.0E-3/c_light;
+    tError = candidate->ErrorT*1.0E-3/c_light;
 
     entry = static_cast<Vertex*>(branch->NewEntry());
 

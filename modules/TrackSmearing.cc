@@ -155,7 +155,7 @@ void TrackSmearing::Process()
   Int_t iCandidate = 0;
   TLorentzVector beamSpotPosition;
   Candidate *candidate, *mother;
-  Double_t pt, eta, d0, d0Error, trueD0, dz, dzError, trueDZ, p, pError, trueP, ctgTheta, ctgThetaError, trueCtgTheta, phi, phiError, truePhi;
+  Double_t pt, eta, d0, d0Error, dz, dzError, p, pError, trueP, ctgTheta, ctgThetaError, trueCtgTheta, phi, phiError, truePhi;
   Double_t x, y, z, t, px, py, pz, theta;
   TProfile2D *d0ErrorHist = NULL,
              *dzErrorHist = NULL,
@@ -210,14 +210,21 @@ void TrackSmearing::Process()
   fItInputArray->Reset();
   while((candidate = static_cast<Candidate*>(fItInputArray->Next())))
   {
+    if (!fApplyToPileUp && candidate->IsPU)
+    {
+      fOutputArray->Add(candidate);
+      iCandidate++;
+      continue;
+    }
+
     const TLorentzVector &momentum = candidate->Momentum;
     const TLorentzVector &position = candidate->InitialPosition;
 
     pt = momentum.Pt();
     eta = momentum.Eta();
 
-    d0 = trueD0 = candidate->D0;
-    dz = trueDZ = candidate->DZ;
+    d0 = candidate->D0;
+    dz = candidate->DZ;
 
     p = trueP = candidate->P;
     ctgTheta = trueCtgTheta = candidate->CtgTheta;
@@ -303,63 +310,70 @@ void TrackSmearing::Process()
     if (phiError < 0.0)
       continue;
 
-    if (fApplyToPileUp || !candidate->IsPU)
-    {
-       d0 = gRandom->Gaus(d0, d0Error);
-       dz = gRandom->Gaus(dz, dzError);
-       p = gRandom->Gaus(p, pError);
-       ctgTheta = gRandom->Gaus(ctgTheta, ctgThetaError);
-       phi = gRandom->Gaus(phi, phiError);
-    }
-
-    if(p < 0.0) continue;
-    while (phi > TMath::Pi ()) phi -= TMath::TwoPi ();
-    while (phi <= -TMath::Pi ()) phi += TMath::TwoPi ();
-
-
     mother = candidate;
     candidate = static_cast<Candidate*>(mother->Clone());
-    candidate->D0 = d0;
-    candidate->DZ = dz;
-    candidate->P = p;
-    candidate->CtgTheta = ctgTheta;
-    candidate->Phi = phi;
 
-    theta = TMath::ACos(ctgTheta / TMath::Sqrt (1.0 + ctgTheta * ctgTheta));
-    candidate->Momentum.SetPx (p * TMath::Cos (phi) * TMath::Sin (theta));
-    candidate->Momentum.SetPy (p * TMath::Sin (phi) * TMath::Sin (theta));
-    candidate->Momentum.SetPz (p * TMath::Cos (theta));
-    candidate->Momentum.SetE (candidate->Momentum.Pt () * TMath::CosH (eta));
-    candidate->PT = candidate->Momentum.Pt ();
-
-    x = position.X ();
-    y = position.Y ();
-    z = position.Z ();
-    t = position.T ();
-    px = candidate->Momentum.Px ();
-    py = candidate->Momentum.Py ();
-    pz = candidate->Momentum.Pz ();
-    pt = candidate->Momentum.Pt ();
-
-    // -- solve for delta: d0' = ( (x+delta)*py' - (y+delta)*px' )/pt'
-
-    candidate->InitialPosition.SetX (x + ((px * y - py * x + d0 * pt) / (py - px)));
-    candidate->InitialPosition.SetY (y + ((px * y - py * x + d0 * pt) / (py - px)));
-    x = candidate->InitialPosition.X ();
-    y = candidate->InitialPosition.Y ();
-    candidate->InitialPosition.SetZ (z + ((pz * (px * (x - beamSpotPosition.X ()) + py * (y - beamSpotPosition.Y ())) + pt * pt * (dz - z)) / (pt * pt)));
-
-    candidate->InitialPosition.SetT(t);
-
-    if (fApplyToPileUp || !candidate->IsPU)
+    if (d0Error != 0)
     {
-       candidate->ErrorD0 = d0Error;
-       candidate->ErrorDZ = dzError;
-       candidate->ErrorP = pError;
-       candidate->ErrorCtgTheta = ctgThetaError;
-       candidate->ErrorPhi = phiError;
-       candidate->ErrorPT = ptError (p, ctgTheta, pError, ctgThetaError);
-       candidate->TrackResolution = pError/p;
+      d0 = gRandom->Gaus(d0, d0Error);
+      candidate->D0 = d0;
+    }
+    candidate->ErrorD0 = d0Error;
+
+    if (dzError != 0)
+    {
+      dz = gRandom->Gaus(dz, dzError);
+      candidate->DZ = dz;
+    }
+    candidate->ErrorDZ = dzError;
+
+    if(pError*ctgThetaError*phiError > 0.)
+    {
+      cout << "To be validated" << endl;
+      p = gRandom->Gaus(p, pError);
+      ctgTheta = gRandom->Gaus(ctgTheta, ctgThetaError);
+      phi = gRandom->Gaus(phi, phiError);
+
+      if(p < 0.0) continue;
+      while (phi > TMath::Pi ()) phi -= TMath::TwoPi ();
+      while (phi <= -TMath::Pi ()) phi += TMath::TwoPi ();
+
+
+      candidate->P = p;
+      candidate->CtgTheta = ctgTheta;
+      candidate->Phi = phi;
+
+      theta = TMath::ACos(ctgTheta / TMath::Sqrt (1.0 + ctgTheta * ctgTheta));
+      candidate->Momentum.SetPx (p * TMath::Cos (phi) * TMath::Sin (theta));
+      candidate->Momentum.SetPy (p * TMath::Sin (phi) * TMath::Sin (theta));
+      candidate->Momentum.SetPz (p * TMath::Cos (theta));
+      candidate->Momentum.SetE (candidate->Momentum.Pt () * TMath::CosH (eta));
+      candidate->PT = candidate->Momentum.Pt ();
+
+      x = position.X ();
+      y = position.Y ();
+      z = position.Z ();
+      t = position.T ();
+      px = candidate->Momentum.Px ();
+      py = candidate->Momentum.Py ();
+      pz = candidate->Momentum.Pz ();
+      pt = candidate->Momentum.Pt ();
+
+      // -- solve for delta: d0' = ( (x+delta)*py' - (y+delta)*px' )/pt'
+
+      candidate->InitialPosition.SetX (x + ((px * y - py * x + d0 * pt) / (py - px)));
+      candidate->InitialPosition.SetY (y + ((px * y - py * x + d0 * pt) / (py - px)));
+      x = candidate->InitialPosition.X ();
+      y = candidate->InitialPosition.Y ();
+      candidate->InitialPosition.SetZ (z + ((pz * (px * (x - beamSpotPosition.X ()) + py * (y - beamSpotPosition.Y ())) + pt * pt * (dz - z)) / (pt * pt)));
+
+      candidate->InitialPosition.SetT(t);
+
+      candidate->ErrorP = pError;
+      candidate->ErrorCtgTheta = ctgThetaError;
+      candidate->ErrorPhi = phiError;
+      candidate->ErrorPT = ptError (p, ctgTheta, pError, ctgThetaError);
+      candidate->TrackResolution = pError/p;
     }
 
     candidate->AddCandidate(mother);

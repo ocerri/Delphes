@@ -109,20 +109,16 @@ void MomentumSmearing::Process()
     res = fFormula->Eval(pt, eta, phi, e);
 
     // apply smearing formula
-    //pt = gRandom->Gaus(pt, fFormula->Eval(pt, eta, phi, e) * pt);
-
     res = ( res > 1.0 ) ? 1.0 : res;
-
     pt = LogNormal(pt, res * pt );
-
-    //if(pt <= 0.0) continue;
 
     mother = candidate;
     candidate = static_cast<Candidate*>(candidate->Clone());
     eta = candidateMomentum.Eta();
     phi = candidateMomentum.Phi();
-    candidate->Momentum.SetPtEtaPhiE(pt, eta, phi, pt*TMath::CosH(eta));
-    //candidate->TrackResolution = fFormula->Eval(pt, eta, phi, e);
+
+    candidate->Momentum.SetPtEtaPhiM(pt, eta, phi, candidateMomentum.M());
+    candidate->ErrorPT = res*pt;
     candidate->TrackResolution = res;
     candidate->AddCandidate(mother);
 

@@ -43,7 +43,7 @@
 #include "TDatabasePDG.h"
 #include "TLorentzVector.h"
 
-#include <algorithm> 
+#include <algorithm>
 #include <stdexcept>
 #include <iostream>
 #include <sstream>
@@ -86,7 +86,7 @@ void EnergySmearing::Init()
 //------------------------------------------------------------------------------
 
 void EnergySmearing::Finish()
-{  
+{
   if(fItInputArray) delete fItInputArray;
 }
 
@@ -102,25 +102,26 @@ void EnergySmearing::Process()
   {
     const TLorentzVector &candidatePosition = candidate->Position;
     const TLorentzVector &candidateMomentum = candidate->Momentum;
-    
+
     pt = candidatePosition.Pt();
     eta = candidatePosition.Eta();
     phi = candidatePosition.Phi();
     energy = candidateMomentum.E();
- 
+
     // apply smearing formula
     energy = gRandom->Gaus(energy, fFormula->Eval(pt, eta, phi, energy));
-     
+
     if(energy <= 0.0) continue;
- 
+
     mother = candidate;
     candidate = static_cast<Candidate*>(candidate->Clone());
     eta = candidateMomentum.Eta();
     phi = candidateMomentum.Phi();
-    candidate->Momentum.SetPtEtaPhiE(energy/TMath::CosH(eta), eta, phi, energy);
+    pt = TMath::Sqrt(energy*energy - candidateMomentum.M()*candidateMomentum.M())/TMath::CosH(eta);
+    candidate->Momentum.SetPtEtaPhiE(pt, eta, phi, energy);
     candidate->TrackResolution = fFormula->Eval(pt, eta, phi, energy)/candidateMomentum.E();
     candidate->AddCandidate(mother);
- 
+
     fOutputArray->Add(candidate);
   }
 }
