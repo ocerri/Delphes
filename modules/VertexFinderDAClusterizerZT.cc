@@ -35,70 +35,13 @@
 
 using namespace std;
 
-static const Double_t mm  = 1.;
-static const Double_t m = 1000.*mm;
-static const Double_t ns  = 1.;
-static const Double_t s = 1.e+9 *ns;
-static const Double_t c_light   = 2.99792458e+8 * m/s;
+static const Double_t c_light   = 2.99792458e+8;
 
-struct tracks_t
+
+double Eik(double t_z, double k_z, double t_dz2, double t_t, double k_t, double t_dt2)
 {
-  std::vector<double> z;      // z-coordinate at point of closest approach to the beamline
-  std::vector<double> t;      // t-coordinate at point of closest approach to the beamline
-  std::vector<double> t_outer; //time at the outer track
-
-  std::vector<double> l; //real path lenght from production point to outer traker
-  std::vector<double> ld; // path lenght from closest approach to beam axis to outer tracker
-
-  std::vector<double> dz2;    // square of the error of z(pca)
-  std::vector<double> dt2;    // square of the error of t(pca)
-  std::vector<Candidate> *tt; // a pointer to the Candidate Track
-  std::vector<double> Z;      // Z[i]   for DA clustering
-  std::vector<double> pi;     // track weight
-  std::vector<double> pt;
-  std::vector<double> pz;
-
-  std::vector<int> PID;
-
-  void AddItem()
-  {
-
-  }
-};
-
-struct vertex_t
-{
-  double z;
-  double t;
-  double pk;     // vertex weight for "constrained" clustering
-  // --- temporary numbers, used during update
-  double ei;
-  double sw;
-  double swz;
-  double swt;
-  double se;
-  // ---for Tc
-  double swE;
-  double Tc;
-};
-
-static bool split(double beta, std::vector<tracks_t> &tks, std::vector<vertex_t> &y);
-static double update1(double beta, std::vector<tracks_t> &tks, std::vector<vertex_t> &y);
-static double update2(double beta, std::vector<tracks_t> &tks, std::vector<vertex_t> &y, double &rho0, const double dzCutOff);
-static void dump(const double beta, const std::vector<vertex_t> & y, const std::vector<tracks_t> & tks);
-static bool merge(std::vector<vertex_t> &);
-static bool merge(std::vector<vertex_t> &, double &);
-static bool purge(std::vector<vertex_t> &, std::vector<tracks_t> & , double &, const double, const double);
-static void splitAll(std::vector<vertex_t> &y);
-static double beta0(const double betamax, std::vector<tracks_t> &tks, std::vector<vertex_t> &y, const double coolingFactor);
-static double Eik(const tracks_t &t, const vertex_t &k);
-
-static bool recTrackLessZ1(const tracks_t & tk1, const tracks_t & tk2)
-{
-  return tk1.z < tk2.z;
+    return (t_z - k_z)*(t_z - k_z)* t_dz2 + (t_t - k_t)(t_t - k_t)*t_dt2;
 }
-
-using namespace std;
 
 //------------------------------------------------------------------------------
 
@@ -135,35 +78,30 @@ void VertexFinderDAClusterizerZT::Init()
 {
   fVerbose         = GetBool("Verbose", 1);
 
+  // !!FIX defaul values
   fMaxIterations   = GetInt("MaxIterations", 100);
   fMinTrackWeight  = GetDouble("MinTrackWeight", 0.5);
   fUseTc           = GetBool("UseTc", 1);
 
   fBetaMax         = GetDouble("BetaMax ", 0.1);
   fBetaStop        = GetDouble("BetaStop", 1.0);
-  fBetaPurge       = GetDouble("BetaStop", 1.0);
+  fBetaPurge       = GetDouble("BetaPurge", 1.0);
 
   fVertexSpaceSize = GetDouble("VertexSpaceSize", 0.5); //in mm
   fVertexTimeSize  = GetDouble("VertexTimeSize", 10E-12); //in s
 
   fCoolingFactor   = GetDouble("CoolingFactor", 0.8);
 
-  fDzCutOff        = GetDouble("DzCutOff", 40);  // Adaptive Fitter uses 30 mm but that appears to be a bit tight here sometimes
-  fD0CutOff        = GetDouble("D0CutOff", 30);
+  // !!FIX defaul values
+  fDzCutOff        = GetDouble("DzCutOff", 40);  // don't know yet. For the moment 30*DzCutOff is hard cut off for the considered tracks
+  fD0CutOff        = GetDouble("D0CutOff", 3);  // d0/sigma_d0, used to compute the pi (weight) of the track
   fDtCutOff        = GetDouble("DtCutOff", 100E-12);  // dummy
   fMinPT           = GetDouble("MinPT", 0.1);
 
-  !!FIX defaul values
+  // !!FIX defaul values
   fUniqueTrkWeight = GetDouble("UniqueTrkWeight", 1);
-  fDzMerge         = GetDouble("DzMerge", 30);
-  fDtMerge         = GetDouble("D0CutOff", 30);
-
-  !!FIX UNITS
-  // convert stuff in cm, ns
-  fVertexSpaceSize /= 10.0;
-  fVertexTimeSize *= 1E9;
-  fDzCutOff       /= 10.0;
-  fD0CutOff       /= 10.0;
+  fDzMerge         = GetDouble("DzMerge", 3);
+  fDtMerge         = GetDouble("D0CutOff", 3);
 
   fInputArray = ImportArray(GetString("InputArray", "TrackSmearing/tracks"));
   fItInputArray = fInputArray->MakeIterator();
@@ -202,9 +140,9 @@ void VertexFinderDAClusterizerZT::Finish()
 void VertexFinderDAClusterizerZT::Process()
 {
   Candidate *candidate, *track;
-  TObjArray *ClusterArray;
-  ClusterArray = new TObjArray;
+  TObjArray *ClusterArray = new TObjArray;
   TIterator *ItClusterArray;
+
   Int_t ivtx = 0;
 
   fInputArray->Sort();
@@ -225,10 +163,11 @@ void VertexFinderDAClusterizerZT::Process()
      }
   }
 
-  // clusterize tracks in Z
+  // clusterize tracks
   clusterize(*fInputArray, *ClusterArray);
 
   if (fVerbose){std::cout <<  " clustering returned  "<< ClusterArray->GetEntriesFast() << " clusters  from " << fInputArray->GetEntriesFast() << " selected tracks" <<std::endl;}
+  // ----------------HERE HERE ----------------//
 
   //loop over vertex candidates
   ItClusterArray = ClusterArray->MakeIterator();
@@ -258,7 +197,6 @@ void VertexFinderDAClusterizerZT::Process()
 
      while((track = static_cast<Candidate*>(it1.Next())))
      {
-
         itr++;
         // TBC: the time is in ns for now TBC
         double t = track->InitialPosition.T()/c_light;
@@ -349,6 +287,8 @@ void VertexFinderDAClusterizerZT::clusterize(const TObjArray &tracks, TObjArray 
 
   vector< Candidate* > pv = vertices();
 
+  // -----HERE HERE -----//
+
   if(fVerbose){ cout << "# VertexFinderDAClusterizerZT::clusterize   pv.size="<<pv.size() << endl;  }
   if (pv.size()==0){ return;  }
 
@@ -398,59 +338,53 @@ vector< Candidate* > VertexFinderDAClusterizerZT::vertices()
   UInt_t clusterIndex = 0;
   vector< Candidate* > clusters;
 
-  vector<tracks_t> tks;
-  tracks_t tr;
-  Double_t z, dz, t, l, dt, d0, d0error;
-
-  // loop over input tracks
+  tracks_t tks;
+  // Fill the tks
+  double z, t, dz2, dt2, pi;
+  double p, e, bz;
   fItInputArray->Reset();
-  while((candidate = static_cast<Candidate*>(fItInputArray->Next())))
+  while(candidate = static_cast<Candidate*>(fItInputArray->Next()))
   {
-    //TBC everything in cm
-    z = candidate->DZ/10;
-    tr.z = z;
-    dz = candidate->ErrorDZ/10;
-    tr.dz2 = dz*dz          // track error
-    //TBC: beamspot size induced error, take 0 for now.
-    // + (std::pow(beamspot.BeamWidthX()*cos(phi),2.)+std::pow(beamspot.BeamWidthY()*sin(phi),2.))/std::pow(tantheta,2.) // beam-width induced
-    + fVertexSpaceSize*fVertexSpaceSize; // intrinsic vertex size, safer for outliers and short lived decays
+    z = candidate->DZ; // [mm]
+    if(fabs(z) > 3*fDzCutOff) continue;
 
-    // TBC: the time is in ns for now TBC
-    //t = candidate->Position.T()/c_light;
-    t = candidate->InitialPosition.T()/c_light;
-    l = candidate->L/c_light;
-    double pt = candidate->Momentum.Pt();
-    double eta = candidate->Momentum.Eta();
-    double phi = candidate->Momentum.Phi();
+    //Temporary in v0 where the right mass is assumed
+    p = candidate->Momentum.Pt() * sqrt(1 + candidate->CtgTheta*candidate->CtgTheta);
+    e = sqrt(p*p + candidate->Mass*candidate->Mass);
+    cout << "M:" << candidate->Mass << endl;
+    bz = candidate->Momentum.Pt() * candidate->CtgTheta/e;
+    t = candidate->Position.T()*1.E9/c_light; // from [mm] to [ps]
+    t += (z - candidate->Position.Z())*1E9/(c_light*bz);
 
-    tr.pt = pt;
-    tr.eta = eta;
-    tr.phi = phi;
-    tr.t = t; //
-    dt = candidate->ErrorT/c_light;
-    tr.dt2 = dt*dt + fVertexTimeSize*fVertexTimeSize;   // the ~injected~ timing error plus a small minimum vertex size in time
-    if(fD0CutOff>0)
+    dz2 = candidate->ErrorDZ*candidate->ErrorDZ;
+    dz2 += fVertexSpaceSize*fVertexSpaceSize;
+    // when needed add beam spot width (x-y)?? mha??
+    dz2 = 1/dz2; //Multipling is faster than dividing all the times
+
+    dt2 = candidate->ErrorT*1.E9/c_light; // [ps]
+    dt2 *= dt2;
+    dt2 += fVertexTimeSize*fVertexTimeSize*1.E24;
+    dt2 = 1/dt2;
+
+    if(fD0CutOff > 0 && candidate->ErrorD0 > 0)
     {
-
-      d0 = TMath::Abs(candidate->D0)/10.0;
-      d0error = candidate->ErrorD0/10.0;
-
-      tr.pi=1./(1.+exp((d0*d0)/(d0error*d0error) - fD0CutOff*fD0CutOff));  // reduce weight for high ip tracks
-
+      double d0_sig = candidate->D0/candidate->ErrorD0;
+      pi = exp(d0_sig*d0_sig - fD0CutOff*fD0CutOff);
+      pi = 1./(1. + pi);
     }
     else
     {
-      tr.pi=1.;
+      pi = 1;
     }
-    tr.tt=&(*candidate);
-    tr.Z=1.;
 
-    // TBC now putting track selection here (> fPTMin)
-    if(tr.pi > 1e-3 && tr.pt > fMinPT)
+    if(fVerbose)
     {
-      tks.push_back(tr);
+      cout << "tks add: " << z << "  " << t << "  " << dz2 << "  " << dt2 << "  " << &(*candidate) << "  " << pi << endl;
     }
+
+    tks.addItem(z, t, dz2, dt2, &(*candidate), pi); //PROVA: rimuovi &(*---)
   }
+  // ---------- HERE HERE ------------/
 
   //print out input tracks
 
@@ -628,12 +562,6 @@ vector< Candidate* > VertexFinderDAClusterizerZT::vertices()
 
 }
 
-//------------------------------------------------------------------------------
-
-static double Eik(const tracks_t & t, const vertex_t &k)
-{
-  return std::pow(t.z-k.z,2.)/t.dz2 + std::pow(t.t - k.t,2.)/t.dt2;
-}
 
 //------------------------------------------------------------------------------
 

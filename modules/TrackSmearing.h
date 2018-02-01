@@ -42,6 +42,8 @@ private:
   std::string fDZResolutionHist;
   Bool_t fUseDZFormula;
 
+  Double_t fZOuterResolution;
+
   DelphesFormula *fPFormula; //!
   std::string fPResolutionFile;
   std::string fPResolutionHist;
@@ -63,7 +65,7 @@ private:
 
   const TObjArray *fInputArray; //!
   const TObjArray *fBeamSpotInputArray; //!
- 
+
   TObjArray *fOutputArray; //!
 
   ClassDef(TrackSmearing, 1)

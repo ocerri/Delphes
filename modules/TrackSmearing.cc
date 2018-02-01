@@ -36,7 +36,7 @@ using namespace std;
 //------------------------------------------------------------------------------
 
 TrackSmearing::TrackSmearing() :
-  fD0Formula(0), fDZFormula(0), fPFormula(0), fCtgThetaFormula(0), fPhiFormula(0), fItInputArray(0)
+  fD0Formula(0), fDZFormula(0), fPFormula(0), fCtgThetaFormula(0), fPhiFormula(0), fItInputArray(0), fZOuterResolution(0)
 {
   fD0Formula = new DelphesFormula;
   fDZFormula = new DelphesFormula;
@@ -60,6 +60,8 @@ TrackSmearing::~TrackSmearing()
 
 void TrackSmearing::Init()
 {
+
+  fZOuterResolution = GetDouble("ZOuterResolution", 0.1); // [mm]
   // read resolution formula
 
   // !!! IF WE WANT TO KEEP ROOT INPUT !!!
@@ -322,10 +324,14 @@ void TrackSmearing::Process()
 
     if (dzError != 0)
     {
-      dz = gRandom->Gaus(dz, dzError);
-      candidate->DZ = dz;
+      candidate->DZ = gRandom->Gaus(dz, dzError);
     }
     candidate->ErrorDZ = dzError;
+
+    if(fZOuterResolution > 0)
+    {
+      candidate->Position.SetZ(candidate->Position.Z() + gRandom->Gaus(0, fZOuterResolution));
+    }
 
     if(pError*ctgThetaError*phiError > 0.)
     {
