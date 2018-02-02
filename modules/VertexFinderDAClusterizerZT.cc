@@ -627,7 +627,7 @@ double update(double beta, tracks_t &tks, vertex_t &vtx, double rho0)
   unsigned int nv = vtx.getSize();
 
   //initialize sums
-  double sumpi = 0;
+  double sum_wi = 0;
   double delta = 0;
   double Z_init = rho0 * exp(-beta * fDzCutOff * fDzCutOff); // Add fDtCutOff here toghether  with this
 
@@ -643,7 +643,21 @@ double update(double beta, tracks_t &tks, vertex_t &vtx, double rho0)
     vtx.szt[i] = 0.0;
   }
 
-  // Loop over
+  // Loop over tracks
+  for(unsigned int i = 0; i < nt; i++)
+  {
+    // Compute the e^(-beta*d) for this track with all the vertices
+    kernel_calc_exp(beta, nv, i, tks, vtx);
+
+    // Compute the normalization of the partition function: Z_x = sum_y exp(-beta*d(x,y))
+    tks.Z[i] = kernel_add_Z(Z_init, nv, vtx);
+
+    // Keep track of the total sum of track weights
+    sum_wi += tks.w[i];
+
+    // Compute the contribution to the covariance matrix of the posterior distribution of each vertex from this track
+    ---->>>>>>>>>>
+  }
 
   // ----- HERE HERE ----//
 

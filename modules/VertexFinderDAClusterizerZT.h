@@ -220,7 +220,7 @@ class VertexFinderDAClusterizerZT: public DelphesModule
 
 // Useful kernel functions ??? A che servono?
 void kernel_calc_exp_arg(double beta, unsigned int nv, unsigned int i_tk, tracks_t &tks, vertex_t &vtx);
-double kernel_add_Z(double Z_init, unsigned int nv, vertex_t &vertices);
+double kernel_add_Z(double Z_init, unsigned int nv, vertex_t &vtx);
 void kernel_calc_normalization(unsigned int i_tk, tracks_t &tks, unsigned int nv, vertex_t &vtx);
 
 #endif
