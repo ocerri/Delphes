@@ -38,11 +38,6 @@ using namespace std;
 static const Double_t c_light   = 2.99792458e+8;
 
 
-double Eik(double t_z, double k_z, double t_dz2, double t_t, double k_t, double t_dt2)
-{
-    return (t_z - k_z)*(t_z - k_z)* t_dz2 + (t_t - k_t)(t_t - k_t)*t_dt2;
-}
-
 //------------------------------------------------------------------------------
 
 VertexFinderDAClusterizerZT::VertexFinderDAClusterizerZT() :
@@ -90,7 +85,7 @@ void VertexFinderDAClusterizerZT::Init()
   fVertexSpaceSize = GetDouble("VertexSpaceSize", 0.5); //in mm
   fVertexTimeSize  = GetDouble("VertexTimeSize", 10E-12); //in s
 
-  fCoolingFactor   = GetDouble("CoolingFactor", 1.2); // Multiply beta so to cooddown must be >1
+  fCoolingFactor   = GetDouble("CoolingFactor", 0.8); // Multiply T so to cooldown must be <1
 
   // !!FIX defaul values
   // DzCutOff also used as initializer to Z_init to do outlayers, as D0CutOff must be O(1) and find anew way to the flowwing line meaning (add new var)
@@ -340,52 +335,7 @@ vector< Candidate* > VertexFinderDAClusterizerZT::vertices()
   vector< Candidate* > clusters;
 
   tracks_t tks;
-  // Fill the tks
-  double z, t, dz_o, dt_o, w;
-  double p, e, bz;
-  fItInputArray->Reset();
-  while(candidate = static_cast<Candidate*>(fItInputArray->Next()))
-  {
-    z = candidate->DZ; // [mm]
-    if(fabs(z) > 3*fDzCutOff) continue;
-
-    //Temporary in v0 where the right mass is assumed
-    p = candidate->Momentum.Pt() * sqrt(1 + candidate->CtgTheta*candidate->CtgTheta);
-    e = sqrt(p*p + candidate->Mass*candidate->Mass);
-    cout << "M:" << candidate->Mass << endl;
-    bz = candidate->Momentum.Pt() * candidate->CtgTheta/e;
-    t = candidate->Position.T()*1.E9/c_light; // from [mm] to [ps]
-    t += (z - candidate->Position.Z())*1E9/(c_light*bz);
-
-    dz_o = candidate->ErrorDZ*candidate->ErrorDZ;
-    dz_o += fVertexSpaceSize*fVertexSpaceSize;
-    // when needed add beam spot width (x-y)?? mha??
-    dz_o = 1/sqrt(dz_o); //Multipling is faster than dividing all the times
-
-    dt_o = candidate->ErrorT*1.E9/c_light; // [ps]
-    dt_o *= dt_o;
-    dt_o += fVertexTimeSize*fVertexTimeSize*1.E24; // [ps^2]
-    dt_o = 1/sqrt(dt_o);
-
-    if(fD0CutOff > 0 && candidate->ErrorD0 > 0)
-    {
-      double d0_sig = candidate->D0/candidate->ErrorD0;
-      w = exp(d0_sig*d0_sig - fD0CutOff*fD0CutOff);
-      w = 1./(1. + w);
-    }
-    else
-    {
-      w = 1;
-    }
-
-    if(fVerbose)
-    {
-      cout << "tks add: " << z << "  " << t << "  " << dz_o << "  " << dt_o << "  " << &(*candidate) << "  " << w << endl;
-    }
-
-    tks.addItem(z, t, dz_o, dt_o, &(*candidate), w); //PROVA: rimuovi &(*---)
-  }
-
+  fill(tks);
 
   unsigned int nt=tks.getSize();
   double rho0=0.0;  // start with no outlier rejection
@@ -400,17 +350,13 @@ vector< Candidate* > VertexFinderDAClusterizerZT::vertices()
   double beta=beta0(tks, vtx);
 
   unsigned int niter=0;
-  double delta = 0;
+  double delta2 = 0;
   do  {
-    delta = update(beta, tks, vtx, rho0);
+    delta2 = update(beta, tks, vtx, rho0);
     niter++;
   }
-  while (delta > 1.e-6 &&  niter < maxIterations_)
+  while (delta2 > 1. &&  niter < maxIterations_)
   // --- HERE HERE ---///
-
-
-
-  while((update1(beta, tks,y)>1.e-6)  && (niter++ < fMaxIterations)){ }
 
   // annealing loop, stop when T<Tmin  (i.e. beta>1/Tmin)
   while(beta<fBetaMax){
@@ -549,123 +495,211 @@ vector< Candidate* > VertexFinderDAClusterizerZT::vertices()
 
 }
 
-
 //------------------------------------------------------------------------------
-
-static void dump(const double beta, const vector<vertex_t> &y, const vector<tracks_t> &tks0)
+// Definition of the distance metrci between track and vertex
+double VertexFinderDAClusterizerZT::Energy(double t_z, double v_z, double dz2_o, double t_t, double v_t, double dt2_o)
 {
-  // copy and sort for nicer printout
-  vector<tracks_t> tks;
-  for(vector<tracks_t>::const_iterator t=tks0.begin(); t!=tks0.end(); t++){tks.push_back(*t); }
-  std::stable_sort(tks.begin(), tks.end(), recTrackLessZ1);
-
-  cout << "-----DAClusterizerInZT::dump ----" << endl;
-  cout << " beta=" << beta << endl;
-  cout << "                                                               z= ";
-  cout.precision(4);
-  for(vector<vertex_t>::const_iterator k=y.begin(); k!=y.end(); k++){
-    //cout  <<  setw(8) << fixed << k->z;
-  }
-  cout << endl << "                                                               t= ";
-  for(vector<vertex_t>::const_iterator k=y.begin(); k!=y.end(); k++){
-    //cout  <<  setw(8) << fixed << k->t;
-  }
-  //cout << endl << "T=" << setw(15) << 1./beta <<"                                             Tc= ";
-  for(vector<vertex_t>::const_iterator k=y.begin(); k!=y.end(); k++){
-    //cout  <<  setw(8) << fixed << k->Tc ;
-  }
-
-  cout << endl << "                                                              pk=";
-  double sumpk=0;
-  for(vector<vertex_t>::const_iterator k=y.begin(); k!=y.end(); k++){
-    //cout <<  setw(8) <<  setprecision(3) <<  fixed << k->pk;
-    sumpk+=k->pk;
-  }
-  cout  << endl;
-
-  double E=0, F=0;
-  cout << endl;
-  cout << "----       z +/- dz        t +/- dt        ip +/-dip       pt    phi  eta    weights  ----" << endl;
-  cout.precision(4);
-  for(unsigned int i=0; i<tks.size(); i++){
-    if (tks[i].Z>0){  F-=log(tks[i].Z)/beta;}
-    double tz= tks[i].z;
-    double tt= tks[i].t;
-    //cout <<  setw (3)<< i << ")" <<  setw (8) << fixed << setprecision(4)<<  tz << " +/-" <<  setw (6)<< sqrt(tks[i].dz2)
-    //     << setw(8) << fixed << setprecision(4) << tt << " +/-" << setw(6) << std::sqrt(tks[i].dt2)  ;
-
-    double sump=0.;
-    for(vector<vertex_t>::const_iterator k=y.begin(); k!=y.end(); k++){
-    if((tks[i].pi>0)&&(tks[i].Z>0)){
-    //double p=pik(beta,tks[i],*k);
-    double p=k->pk * std::exp(-beta*Eik(tks[i],*k)) / tks[i].Z;
-    if( p > 0.0001){
-      //cout <<  setw (8) <<  setprecision(3) << p;
-    }else{
-      cout << "    .   ";
-    }
-    E+=p*Eik(tks[i],*k);
-    sump+=p;
-  }else{
-      cout << "        ";
-  }
-      }
-      cout << endl;
-    }
-    cout << endl << "T=" << 1/beta  << " E=" << E << " n="<< y.size() << "  F= " << F <<  endl <<  "----------" << endl;
+  return (t_z - v_z)*(t_z - k_z)* dz2_o + (t_t - v_t)(t_t - k_t)*dt2_o;
 }
 
 //------------------------------------------------------------------------------
-
-double update(double beta, tracks_t &tks, vertex_t &vtx, double rho0)
+// Fill tks with the input candidates array
+void VertexFinderDAClusterizerZT::fill(tracks_t &tks)
 {
-  //update weights and vertex positions
-  // mass constrained annealing without noise
-  // returns the squared sum of changes of vertex positions
+  tks.sum_w = 0;
+  tks.sum_dz2_o = 0;
+  tks.sum_dt2_o = 0;
 
+  Candidate *candidate;
+
+  double z, t, dz_o, dt_o, w;
+  double p, e, bz;
+  fItInputArray->Reset();
+  while(candidate = static_cast<Candidate*>(fItInputArray->Next()))
+  {
+    z = candidate->DZ; // [mm]
+    if(fabs(z) > 3*fDzCutOff) continue;
+
+    //Temporary in v0 where the right mass is assumed
+    p = candidate->Momentum.Pt() * sqrt(1 + candidate->CtgTheta*candidate->CtgTheta);
+    e = sqrt(p*p + candidate->Mass*candidate->Mass);
+    cout << "M:" << candidate->Mass << endl;
+    bz = candidate->Momentum.Pt() * candidate->CtgTheta/e;
+    t = candidate->Position.T()*1.E9/c_light; // from [mm] to [ps]
+    t += (z - candidate->Position.Z())*1E9/(c_light*bz);
+
+    dz2_o = candidate->ErrorDZ*candidate->ErrorDZ;
+    dz2_o += fVertexSpaceSize*fVertexSpaceSize;
+    // when needed add beam spot width (x-y)?? mha??
+    dz2_o = 1/dz2_o; //Multipling is faster than dividing all the times
+    tks.sum_dz2_o += dz2_o;
+
+    dt2_o = candidate->ErrorT*1.E9/c_light; // [ps]
+    dt2_o *= dt2_o;
+    dt2_o += fVertexTimeSize*fVertexTimeSize*1.E24; // [ps^2]
+    dt2_o = 1/dt2_o;
+    tks.sum_dt2_o += dt2_o;
+
+    if(fD0CutOff > 0 && candidate->ErrorD0 > 0)
+    {
+      double d0_sig = candidate->D0/candidate->ErrorD0;
+      w = exp(d0_sig*d0_sig - fD0CutOff*fD0CutOff);
+      w = 1./(1. + w);
+    }
+    else
+    {
+      w = 1;
+    }
+
+    if(fVerbose)
+    {
+      cout << "tks add: " << z << "  " << t << "  " << dz2_o << "  " << dt2_o << "  " << &(*candidate) << "  " << w << endl;
+    }
+
+    tks.addItem(z, t, dz2_o, dt2_o, &(*candidate), w); //PROVA: rimuovi &(*---)
+    tks.sum_w += w;
+  }
+  tks.NormalizeWeights();
+
+  return tks;
+}
+
+//------------------------------------------------------------------------------
+// Compute higher phase transition temperature
+static double VertexFinderDAClusterizerZT::beta0(tracks_t &tks, vertex_t &vtx)
+{
+  if(vtx.getSize() != 1)
+  {
+    throw std::invalid_argument( "Unexpected number of vertices" );
+  }
+
+  unsigned int Ntks=tks.getSize();
+
+  //Set vertex position at T=inf as the weighted average of the tracks
+  double sum_wz = 0, summ_wt = 0;
+  for(unsigned int i = 0; i < Ntks; i++)
+  {
+    sum_wz += tks.w[i] * tks.z[i] * tks.dz2_o[i];
+    sum_wt += tks.w[i] * tks.t[i] * tks.dt2_o[i];
+  }
+  vtx.z[0] = sum_wz / tks.sum_dz2_o;
+  vtx.t[0] = sum_wt / tks.sum_dt2_o;
+
+  // Compute the posterior distribution covariance matrix elements
+  double s_zz = 0, s_tt = 0, s_zt = 0;
+  for(unsigned int i = 0; i < Ntks; i++)
+  {
+    double dz = (tks.z[i] - vtx.z[0]) * tks.dz_o[i];
+    double dt = (tks.t[i] - vtx.t[0]) * tks.dt_o[i];
+
+    s_zz += tks.w[i] * dz * dz;
+    s_tt += tks.w[i] * dt * dt;
+    s_zt += tks.w[i] * dt * dz;
+  }
+
+  // Copute the max eighenvalue
+  double beta_c = (s_tt - s_zz)*(s_tt - s_zz) + 4*s_zt*s_zt;
+  beta_c = 1. / (s_tt + s_zz + sqrt(beta_c));
+
+  double out;
+  if (beta_c < fBetaMax)
+  {
+    // Cool down up to a step before the phase transition
+    out = int(log(fBetaMax/beta_c) / log(fCoolingFactor)) - 1;
+    out = fBetaMax / pow(fCoolingFactor, out);
+  }
+  else
+  {
+    out = fBetaMax * fCoolingFactor;
+  }
+
+  if(fVerbose)
+  {
+    cout << "Beta0: " << beta_c << " " << out << endl;
+  }
+
+  return out;
+}
+
+//------------------------------------------------------------------------------
+// Compute the new vertexes position and mass (probability) -- mass constrained annealing without noise
+// Compute and store the posterior covariance matrix elements
+// Returns the squared sum of changes of vertexex position normalized by the vertex size declared in the init
+double VertexFinderDAClusterizerZT::update(double beta, tracks_t &tks, vertex_t &vtx, double rho0)
+{
   unsigned int nt = tks.getSize();
   unsigned int nv = vtx.getSize();
 
   //initialize sums
-  double sum_wi = 0;
-  double delta = 0;
   double Z_init = rho0 * exp(-beta * fDzCutOff * fDzCutOff); // Add fDtCutOff here toghether  with this
 
-  for (unsigned int i = 0; i < nv; i++)
+  // Compute all the energies (aka distances) and normalization partition function
+  vector<double> exp_betaE(nt * nv);
+  for (unsigned int k = 0; k < nv; k++)
   {
-    vtx.se[i] = 0.0;
-    vtx.nuz[i] = 0.0;
-    vtx.nut[i] = 0.0;
-    vtx.swz[i] = 0.0;
-    vtx.swt[i] = 0.0;
-    vtx.szz[i] = 0.0;
-    vtx.stt[i] = 0.0;
-    vtx.szt[i] = 0.0;
+    for (unsigned int i = 0; i < nt; i++)
+    {
+      if(k == 0) tks.Z[i] = Z_init;
+
+      double aux = Energy(tks.z[i], vtx.z[k], tks.dz2_o[i], tks.t[i], vtx.t[k], tks.dt2_o[i]);
+      aux = exp(-beta * aux);
+      tks.Z[i] += aux;
+
+      unsigned int idx = k*nt + i;
+      exp_betaE1[idx] = aux;
+    }
   }
 
-  // Loop over tracks
-  for(unsigned int i = 0; i < nt; i++)
+  double delta2 = 0; // Sum of vertex displacement in this run
+  for (unsigned int k = 0; k < nv; k++)
   {
-    // Compute the e^(-beta*d) for this track with all the vertices
-    kernel_calc_exp(beta, nv, i, tks, vtx);
+    // Compute the new vertex positions and masses
+    double pk_new = 0;
+    double sw_z = 0, sw_t = 0;
+    // Compute the posterior covariance matrix Elements
+    double szz = 0, stt = 0, stz = 0;
 
-    // Compute the normalization of the partition function: Z_x = sum_y exp(-beta*d(x,y))
-    tks.Z[i] = kernel_add_Z(Z_init, nv, vtx);
+    for (unsigned int i = 0; i < nt; i++)
+    {
+      unsigned int idx = k*nt + i;
 
-    // Keep track of the total sum of track weights
-    sum_wi += tks.w[i];
+      double p_ygx = vtx.pk[k] * exp_betaE[idx] / tks.Z[i]      //p(y|x), Gibbs distribution
+      pk_new += tks.w[i] * p_ygx;
 
-    // Compute the contribution to the covariance matrix of the posterior distribution of each vertex from this track
-    ---->>>>>>>>>>
+      sw_z += tks.w[i] * p_ygx * tks.z[i] * tks.dz2_o[i];
+      sw_t += tks.w[i] * p_ygx * tks.t[i] * tks.dt2_o[i];
+
+      // Add the track contribution to the covariance matrix
+      double p_xgy = p_ygx * tks.w[i] / vtx.pk[k];
+      double dz = (tks.z[i] - vtx.z[0]) * tks.dz_o[i];
+      double dt = (tks.t[i] - vtx.t[0]) * tks.dt_o[i];
+
+      szz += tks.w[i] * dz * dz;
+      stt += tks.w[i] * dt * dt;
+      szt += tks.w[i] * dt * dz;
+    }
+
+    double new_z = sw_z/tks.sum_dz2_o;
+    double new_t = sw_t/tks.sum_dt2_o;
+
+    double z_displ = (new_z - vtx.z[k])/fVertexSpaceSize;
+    double t_displ = (new_t - vtx.t[k])/fVertexTimeSize;
+    delta2 += z_displ*z_displ + t_displ*t_displ;
+
+    vtx.z[k] = new_z;
+    vtx.t[k] = new_t;
+    vtx.pk[k] = pk_new;
+    vtx.szz[k] = szz;
+    vtx.stt[k] = stt;
+    vtx.szt[k] = szt;
   }
 
-  // ----- HERE HERE ----//
-
+  return delta2;
 }
 
 //------------------------------------------------------------------------------
 
-static bool merge(vector<vertex_t> &y, double &beta)
+static bool VertexFinderDAClusterizerZT::merge(vector<vertex_t> &y, double &beta)
 {
   // merge clusters that collapsed or never separated,
   // only merge if the estimated critical temperature of the merged vertex is below the current temperature
@@ -703,7 +737,7 @@ static bool merge(vector<vertex_t> &y, double &beta)
 
 //------------------------------------------------------------------------------
 
-static bool purge(vector<vertex_t> &y, vector<tracks_t> &tks, double & rho0, const double beta, const double dzCutOff)
+static bool VertexFinderDAClusterizerZT::purge(vector<vertex_t> &y, vector<tracks_t> &tks, double & rho0, const double beta, const double dzCutOff)
 {
   // eliminate clusters with only one significant/unique track
   if(y.size()<2)  return false;
@@ -739,78 +773,10 @@ static bool purge(vector<vertex_t> &y, vector<tracks_t> &tks, double & rho0, con
   }
 }
 
-//------------------------------------------------------------------------------
-// Compute higher phase transition temperature
-static double beta0(tracks_t &tks, vertex_t &vtx)
-{
-  if(vtx.getSize() != 1)
-  {
-    throw std::invalid_argument( "Unexpected number of vertices" );
-  }
-
-  unsigned int Ntks=tks.getSize();
-
-  //Set vertex position at T=inf as the weighted average of the tracks
-  double sum_wz = 0, summ_wt = 0;
-  double sum_w_z = 0, sum_w_t = 0;
-  double w_z, w_t;
-  for(unsigned int i = 0; i < Ntks; i++)
-  {
-    w_z = tks.w[i] * tks.dz_o[i];
-    w_t = tks.w[i] * tks.dt_o[i];
-    sum_wz += w_z * tks.z[i];
-    sum_wt += w_t * tks.t[i];
-    sum_w_z += w_z;
-    sum_w_t += w_t;
-  }
-  vtx.z[0] = sum_wz / sum_w_z;
-  vtx.t[0] = sum_wt / sum_w_t;
-
-  // Compute the posterior distribution covariance matrix elements
-  double s_zz = 0, s_tt = 0, s_zt = 0;
-  double norm = 0;
-  double dz, dt;
-  for(unsigned int i = 0; i < Ntks; i++)
-  {
-    dz = (tks.z[i] - vtx.z[0]) * tks.dz_o[i];
-    dt = (tks.t[i] - vtx.t[0]) * tks.dt_o[i];
-
-    s_zz += tks.w[i] * dz * dz;
-    s_tt += tks.w[i] * dt * dt;
-    s_zt += tks.w[i] * dt * dz;
-
-    norm += tks.w[i];
-  }
-  s_zz /= norm;
-  s_tt /= norm;
-  s_zt /= norm;
-  // Copute the max eighenvalue
-  double beta_c = (s_tt - s_zz)*(s_tt - s_zz) + 4*s_zt*s_zt;
-  beta_c = 1. / (s_tt + s_zz + sqrt(beta_c));
-
-  double out;
-  if (beta_c < fBetaMax)
-  {
-    // Cool down up to a step before the phase transition
-    out = int(log(fBetaMax/beta_c) / log(fCoolingFactor)) - 1;
-    out = fBetaMax / pow(fCoolingFactor, out);
-  }
-  else
-  {
-    out = fBetaMax * fCoolingFactor;
-  }
-
-  if(fVerbose)
-  {
-    cout << "Beta0: " << beta_c << " " << out << endl;
-  }
-
-  return out;
-}
 
 //------------------------------------------------------------------------------
 
-static bool split(double beta, vector<tracks_t> &tks, vector<vertex_t> &y)
+static bool VertexFinderDAClusterizerZT::split(double beta, vector<tracks_t> &tks, vector<vertex_t> &y)
 {
   // split only critical vertices (Tc >~ T=1/beta   <==>   beta*Tc>~1)
   // an update must have been made just before doing this (same beta, no merging)
@@ -879,7 +845,7 @@ static bool split(double beta, vector<tracks_t> &tks, vector<vertex_t> &y)
 
 //------------------------------------------------------------------------------
 
-void splitAll(vector<vertex_t> &y)
+void VertexFinderDAClusterizerZT::splitAll(vector<vertex_t> &y)
 {
 
 
@@ -915,30 +881,3 @@ void splitAll(vector<vertex_t> &y)
 
   y=y1;
 }
-
-//------------------------------------------------------------------------------
-// Kernel functions
-void kernel_calc_exp(double beta, unsigned int nv, unsigned int i_tk, tracks_t &tks, vertex_t &vtx)
-{
-  double mbdz2 = -beta * tks.dz_o[i_tk] * tks.dz_o[i_tk];
-  double mbdt2 = -beta * tks.dt_o[i_tk] * tks.dt_o[i_tk];
-
-  for(unsigned int i = 0; i < nv; i++)
-  {
-    const double res_z = tks.z[i_tk] - vtx.z[i];
-    const double res_t = tks.t[i_tk] - vtx.t[i];
-    vtx.ei[i] = exp(mbdz2*res_z*res_z + mbdt2*res_t*res_t);
-  }
-}
-
-double kernel_add_Z(double Z_init, unsigned int nv, vertex_t &vtx)
-{
-  double Z_out = Z_init;
-  for(unsigned int i = 0; i < nv; i++)
-  {
-    Z_out += vtx.pk[i] * vtx.ei[i];
-  }
-  return Z_out;
-}
-
-void kernel_calc_normalization()
