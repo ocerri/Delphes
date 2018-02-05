@@ -43,21 +43,16 @@ static const Double_t c_light   = 2.99792458e+8;
 VertexFinderDAClusterizerZT::VertexFinderDAClusterizerZT() :
   fVerbose(0),
   fMaxIterations(0),
-  fMinTrackWeight(0),
-  fUseTc(0),
   fBetaMax(0),
   fBetaStop(0),
   fBetaPurge(0),
-  fVertexSpaceSize(0),
-  fVertexTimeSize(0),
+  fVertexZSize(0),
+  fVertexTSize(0),
   fCoolingFactor(0),
   fDzCutOff(0),
   fD0CutOff(0),
   fDtCutOff(0),
-  fMinPT(0),
-  fUniqueTrkWeight(0),
-  fDzMerge(0),
-  fDtMerge(0)
+  fD2Merge(0),
 {
 }
 
@@ -75,15 +70,13 @@ void VertexFinderDAClusterizerZT::Init()
 
   // !!FIX defaul values
   fMaxIterations   = GetInt("MaxIterations", 100);
-  fMinTrackWeight  = GetDouble("MinTrackWeight", 0.5);
-  fUseTc           = GetBool("UseTc", 1);
 
   fBetaMax         = GetDouble("BetaMax ", 0.1);
-  fBetaStop        = GetDouble("BetaStop", 1.0);
   fBetaPurge       = GetDouble("BetaPurge", 1.0);
+  fBetaStop        = GetDouble("BetaStop", 1.0);
 
-  fVertexSpaceSize = GetDouble("VertexSpaceSize", 0.5); //in mm
-  fVertexTimeSize  = GetDouble("VertexTimeSize", 10E-12); //in s
+  fVertexZSize = GetDouble("VertexZSize", 0.5); //in mm
+  fVertexTSize  = 1E12*GetDouble("VertexTimeSize", 10E-12); //Convert from [s] to [ps]
 
   fCoolingFactor   = GetDouble("CoolingFactor", 0.8); // Multiply T so to cooldown must be <1
 
@@ -92,12 +85,8 @@ void VertexFinderDAClusterizerZT::Init()
   fDzCutOff        = GetDouble("DzCutOff", 40);  // don't know yet. For the moment 30*DzCutOff is hard cut off for the considered tracks
   fD0CutOff        = GetDouble("D0CutOff", 3);  // d0/sigma_d0, used to compute the pi (weight) of the track
   fDtCutOff        = GetDouble("DtCutOff", 3);  // Used as first line for outlayer rejection O(1). Put only a parameter maybe and use the other for hard cutoff
-  fMinPT           = GetDouble("MinPT", 0.1);
 
-  // !!FIX defaul values
-  fUniqueTrkWeight = GetDouble("UniqueTrkWeight", 1);
-  fDzMerge         = GetDouble("DzMerge", 3);
-  fDtMerge         = GetDouble("D0CutOff", 3);
+  fD2Merge         = GetDouble("DzMerge", 2); // (dz/ZSize)^2+(dt/TSize)^2 limit for merging vertices
 
   fInputArray = ImportArray(GetString("InputArray", "TrackSmearing/tracks"));
   fItInputArray = fInputArray->MakeIterator();
@@ -159,7 +148,6 @@ void VertexFinderDAClusterizerZT::Process()
   clusterize(*ClusterArray);
 
   if (fVerbose){std::cout <<  " clustering returned  "<< ClusterArray->GetEntriesFast() << " clusters  from " << fInputArray->GetEntriesFast() << " selected tracks" <<std::endl;}
-  // ----------------HERE HERE ----------------//
 
   //loop over vertex candidates
   TIterator * ItClusterArray = ClusterArray->MakeIterator();
@@ -168,102 +156,56 @@ void VertexFinderDAClusterizerZT::Process()
   while((candidate = static_cast<Candidate*>(ItClusterArray->Next())))
   {
 
-     double meantime = 0.;
-     double expv_x2 = 0.;
-     double normw = 0.;
-     double errtime = 0;
-
-     double meanpos = 0.;
-     double meanerr2 = 0.;
-     double normpos = 0.;
-     double errpos = 0.;
-
-     double sumpt2 = 0.;
-
-     int itr = 0;
 
      if(fVerbose)cout<<"this vertex has: "<<candidate->GetCandidates()->GetEntriesFast()<<" tracks"<<endl;
 
+     /*
+     // Somehow fit the vertex from the tracks now
      // loop over tracks belonging to this vertex
-     TIter it1(candidate->GetCandidates());
-     it1.Reset();
-
-     Candidate *track;
-     while((track = static_cast<Candidate*>(it1.Next())))
-     {
-        itr++;
-        // TBC: the time is in ns for now TBC
-        double t = track->InitialPosition.T()/c_light;
-        double dt = track->ErrorT/c_light;
-        const double time = t;
-        const double inverr = 1.0/dt;
-        meantime += time*inverr;
-        expv_x2  += time*time*inverr;
-        normw    += inverr;
-
-        // compute error position TBC
-        const double pt = track->Momentum.Pt();
-        const double z = track->DZ/10.0;
-        const double err_pt = track->ErrorPT;
-        const double err_z = track->ErrorDZ;
-
-        const double wi = (pt/(err_pt*err_z))*(pt/(err_pt*err_z));
-        meanpos += z*wi;
-
-        meanerr2 += err_z*err_z*wi;
-        normpos += wi;
-        sumpt2 += pt*pt;
-
-        // while we are here store cluster index in tracks
-        track->ClusterIndex = ivtx;
-     }
-
-     meantime = meantime/normw;
-     expv_x2 = expv_x2/normw;
-     errtime = TMath::Sqrt((expv_x2 - meantime*meantime)/itr);
-     meanpos = meanpos/normpos;
-     meanerr2 = meanerr2/normpos;
-     errpos = TMath::Sqrt(meanerr2/itr);
-
-     candidate->Position.SetXYZT(0.0, 0.0, meanpos*10.0 , meantime*c_light);
-     candidate->PositionError.SetXYZT(0.0, 0.0, errpos*10.0 , errtime*c_light);
-     candidate->SumPT2 = sumpt2;
-     candidate->ClusterNDF = itr;
-     candidate->ClusterIndex = ivtx;
+     // TIter it1(candidate->GetCandidates());
+     // it1.Reset();
+     //
+     // Candidate *track;
+     // while((track = static_cast<Candidate*>(it1.Next())))
+     // {
+     //    itr++;
+     //
+     //    double t = track->InitialPosition.T()/c_light;
+     //    double dt = track->ErrorT/c_light;
+     //    const double time = t;
+     //    const double inverr = 1.0/dt;
+     //    meantime += time*inverr;
+     //    expv_x2  += time*time*inverr;
+     //    normw    += inverr;
+     //
+     //    // compute error position TBC
+     //    const double pt = track->Momentum.Pt();
+     //    const double z = track->DZ/10.0;
+     //    const double err_pt = track->ErrorPT;
+     //    const double err_z = track->ErrorDZ;
+     //
+     //    const double wi = (pt/(err_pt*err_z))*(pt/(err_pt*err_z));
+     //    meanpos += z*wi;
+     //
+     //    meanerr2 += err_z*err_z*wi;
+     //    normpos += wi;
+     //    sumpt2 += pt*pt;
+     //
+     // }
+     //
+     // candidate->Position.SetXYZT(0.0, 0.0, meanpos*10.0 , meantime*c_light);
+     // candidate->PositionError.SetXYZT(0.0, 0.0, errpos*10.0 , errtime*c_light);
+     // candidate->SumPT2 = sumpt2;
+     // candidate->ClusterNDF = itr;
+     // candidate->ClusterIndex = ivtx;
+     // ivtx++;
+     */
 
      fVertexOutputArray->Add(candidate);
 
-     ivtx++;
 
-     if (fVerbose){
-     std::cout << "x,y,z";
-       std::cout << ",t";
-       std::cout << "=" << candidate->Position.X()/10.0 <<" " << candidate->Position.Y()/10.0 << " " <<  candidate->Position.Z()/10.0;
-       std::cout << " " << candidate->Position.T()/c_light;
 
-       std::cout << std::endl;
-       std::cout << "sumpt2 " << candidate->SumPT2<<endl;
-
-       std::cout << "ex,ey,ez";
-       std::cout << ",et";
-       std::cout << "=" << candidate->PositionError.X()/10.0 <<" " << candidate->PositionError.Y()/10.0 << " " <<  candidate->PositionError.Z()/10.0;
-       std::cout << " " << candidate->PositionError.T()/c_light;
-       std::cout << std::endl;
-
-      }
    }// end of cluster loop
-
-
-    if(fVerbose){
-      std::cout << "PrimaryVertexProducerAlgorithm::vertices candidates =" << ClusterArray->GetEntriesFast() << std::endl;
-    }
-
-    //TBC maybe this can be done later
-    // sort vertices by pt**2  vertex (aka signal vertex tagging)
-    /*if(pvs.size()>1){
-      sort(pvs.begin(), pvs.end(), VertexHigherPtSquared());
-    }
-     */
 
   delete ClusterArray;
 
@@ -305,7 +247,7 @@ void VertexFinderDAClusterizerZT::clusterize(TObjArray &clusters)
   }
 
   // Merge vertexes which are too close
-  while(merge(vtx, 2))
+  while(merge(vtx, fD2Merge))
   {
     unsigned int niter=0;
     double delta2 = 0;
@@ -400,14 +342,14 @@ void VertexFinderDAClusterizerZT::fill(tracks_t &tks)
     t += (z - candidate->Position.Z())*1E9/(c_light*bz);
 
     dz2_o = candidate->ErrorDZ*candidate->ErrorDZ;
-    dz2_o += fVertexSpaceSize*fVertexSpaceSize;
+    dz2_o += fVertexZSize*fVertexZSize;
     // when needed add beam spot width (x-y)?? mha??
     dz2_o = 1/dz2_o; //Multipling is faster than dividing all the times
     tks.sum_dz2_o += dz2_o;
 
     dt2_o = candidate->ErrorT*1.E9/c_light; // [ps]
     dt2_o *= dt2_o;
-    dt2_o += fVertexTimeSize*fVertexTimeSize*1.E24; // [ps^2]
+    dt2_o += fVertexTSize*fVertexTSize; // [ps^2]
     dt2_o = 1/dt2_o;
     tks.sum_dt2_o += dt2_o;
 
@@ -553,8 +495,8 @@ double VertexFinderDAClusterizerZT::update(double beta, tracks_t &tks, vertex_t 
     double new_z = sw_z/tks.sum_dz2_o;
     double new_t = sw_t/tks.sum_dt2_o;
 
-    double z_displ = (new_z - vtx.z[k])/fVertexSpaceSize;
-    double t_displ = (new_t - vtx.t[k])/fVertexTimeSize;
+    double z_displ = (new_z - vtx.z[k])/fVertexZSize;
+    double t_displ = (new_t - vtx.t[k])/fVertexTSize;
     delta2 += z_displ*z_displ + t_displ*t_displ;
 
     vtx.z[k] = new_z;
@@ -598,12 +540,12 @@ static bool VertexFinderDAClusterizerZT::split(double beta, vertex_t &vtx, const
         aux_slope = vtx.szz[k] - vtx.stt[k] - sqrt(aux_slope);
         aux_slope = -2*vtx.stz[k] / aux_slope;
 
-        vtx.t[k] = t_old + epsilon*fVertexTimeSize;
-        vtx.z[k] = z_old + aux_slope * epsilon * fVertexSpaceSize;
+        vtx.t[k] = t_old + epsilon*fVertexTSize;
+        vtx.z[k] = z_old + aux_slope * epsilon * fVertexZSize;
         vtx.pk[k] = pk_old/2.;
 
-        new_t = t_old - epsilon*fVertexTimeSize;
-        new_z = z_old - aux_slope * epsilon * fVertexSpaceSize;
+        new_t = t_old - epsilon*fVertexTSize;
+        new_z = z_old - aux_slope * epsilon * fVertexZSize;
         new_pk = pk_old/2.;
 
         vtx.addItem(new_z, new_t, new_pk);

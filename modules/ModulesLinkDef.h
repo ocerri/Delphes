@@ -68,6 +68,7 @@
 #include "modules/VertexSorter.h"
 #include "modules/VertexFinder.h"
 #include "modules/VertexFinderDA4D.h"
+#include "modules/VertexFinderDAClusterizerZT.h"
 #include "modules/ExampleModule.h"
 
 #ifdef __CINT__
@@ -119,6 +120,7 @@
 #pragma link C++ class VertexSorter+;
 #pragma link C++ class VertexFinder+;
 #pragma link C++ class VertexFinderDA4D+;
+#pragma link C++ class VertexFinderDAClusterizerZT+;
 #pragma link C++ class ExampleModule+;
 
 #endif

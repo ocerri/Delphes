@@ -134,8 +134,8 @@ class VertexFinderDAClusterizerZT: public DelphesModule
 
       double DistanceSquare(unsigned int k1, unsigned int k1)
       {
-        double dz = (z[k1] - z[k2])/fVertexSpaceSize;
-        double dt = (t[k1] - t[k2])/fVertexTimeSize;
+        double dz = (z[k1] - z[k2])/fVertexZSize;
+        double dt = (t[k1] - t[k2])/fVertexTSize;
 
         return dz*dz + dt*dt;
       }
@@ -203,27 +203,22 @@ class VertexFinderDAClusterizerZT: public DelphesModule
     Bool_t fVerbose;
 
     UInt_t fMaxIterations;
-    Double_t fMinTrackWeight;
-    Bool_t fUseTc;
 
     Float_t fBetaMax;
     Float_t fBetaStop;
     Float_t fBetaPurge;
 
 
-    Float_t fVertexSpaceSize;
-    Float_t fVertexTimeSize;
+    Float_t fVertexZSize;
+    Float_t fVertexTSize;
 
     Double_t fCoolingFactor;
 
     Double_t fDzCutOff;
     Double_t fD0CutOff;
     Double_t fDtCutOff; // for when the beamspot has time
-    Double_t fMinPT;
 
-    Double_t fUniqueTrkWeight;
-    Double_t fDzMerge;
-    Double_t fDtMerge;
+    Double_t fD2Merge;
 
     TObjArray *fInputArray;
     TIterator *fItInputArray;
