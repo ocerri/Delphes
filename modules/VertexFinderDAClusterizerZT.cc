@@ -105,7 +105,7 @@ void VertexFinderDAClusterizerZT::Init()
   fOutputArray = ExportArray(GetString("OutputArray", "tracks"));
   fVertexOutputArray = ExportArray(GetString("VertexOutputArray", "vertices"));
 
-  if (fBetaMax > fBetaPurge)
+  if (fBetaMax < fBetaPurge)
   {
     fBetaPurge = fBetaMax;
     if (fVerbose)
@@ -114,9 +114,9 @@ void VertexFinderDAClusterizerZT::Init()
     }
   }
 
-  if (fBetaPurge > fBetaStop)
+  if (fBetaPurge < fBetaStop)
   {
-    fBetaStop = TMath::Min(1., fBetaMax);
+    fBetaStop = fBetaPurge;
     if (fVerbose)
     {
       cout << "BetaPurge set to " << fBetaPurge << endl;
@@ -135,12 +135,6 @@ void VertexFinderDAClusterizerZT::Finish()
 
 void VertexFinderDAClusterizerZT::Process()
 {
-  Candidate *candidate, *track;
-  TObjArray *ClusterArray = new TObjArray;
-  TIterator *ItClusterArray;
-
-  Int_t ivtx = 0;
-
   fInputArray->Sort();
 
   TLorentzVector pos, mom;
@@ -150,6 +144,7 @@ void VertexFinderDAClusterizerZT::Process()
      cout<<" Found "<<fInputArray->GetEntriesFast()<<" input tracks"<<endl;
      //loop over input tracks
      fItInputArray->Reset();
+     Candidate *candidate;
      while((candidate = static_cast<Candidate*>(fItInputArray->Next())))
      {
         pos = candidate->InitialPosition;
@@ -160,14 +155,16 @@ void VertexFinderDAClusterizerZT::Process()
   }
 
   // clusterize tracks
-  clusterize(*fInputArray, *ClusterArray);
+  TObjArray *ClusterArray = new TObjArray;
+  clusterize(*ClusterArray);
 
   if (fVerbose){std::cout <<  " clustering returned  "<< ClusterArray->GetEntriesFast() << " clusters  from " << fInputArray->GetEntriesFast() << " selected tracks" <<std::endl;}
   // ----------------HERE HERE ----------------//
 
   //loop over vertex candidates
-  ItClusterArray = ClusterArray->MakeIterator();
+  TIterator * ItClusterArray = ClusterArray->MakeIterator();
   ItClusterArray->Reset();
+  Int_t ivtx = 0;
   while((candidate = static_cast<Candidate*>(ItClusterArray->Next())))
   {
 
@@ -191,6 +188,7 @@ void VertexFinderDAClusterizerZT::Process()
      TIter it1(candidate->GetCandidates());
      it1.Reset();
 
+     Candidate *track;
      while((track = static_cast<Candidate*>(it1.Next())))
      {
         itr++;
@@ -273,226 +271,99 @@ void VertexFinderDAClusterizerZT::Process()
 
 //------------------------------------------------------------------------------
 
-void VertexFinderDAClusterizerZT::clusterize(const TObjArray &tracks, TObjArray &clusters)
+void VertexFinderDAClusterizerZT::clusterize(TObjArray &clusters)
 {
-  if(fVerbose) {
-    cout << "###################################################" << endl;
-    cout << "# VertexFinderDAClusterizerZT::clusterize   nt="<<tracks.GetEntriesFast() << endl;
-    cout << "###################################################" << endl;
-  }
-
-  vector< Candidate* > pv = vertices();
-
-  // -----HERE HERE -----//
-
-  if(fVerbose){ cout << "# VertexFinderDAClusterizerZT::clusterize   pv.size="<<pv.size() << endl;  }
-  if (pv.size()==0){ return;  }
-
-  // convert into vector of candidates
-  //TObjArray *ClusterArray = pv.begin()->GetCandidates();
-  //Candidate *aCluster = static_cast<Candidate*>(&(pv.at(0)));
-  Candidate *aCluster = pv.at(0);
-
-  // fill into clusters and merge
-
-
-  if( fVerbose ) {
-      std::cout << '\t' << 0;
-      std::cout << ' ' << (*pv.begin())->Position.Z()/10.0 << ' ' << (*pv.begin())->Position.T()/c_light << std::endl;
-    }
-
-  for(vector<Candidate*>::iterator k=pv.begin()+1; k!=pv.end(); k++){
-    if( fVerbose ) {
-      std::cout << '\t' << std::distance(pv.begin(),k);
-      std::cout << ' ' << (*k)->Position.Z() << ' ' << (*k)->Position.T() << std::endl;
-    }
-
-
-    // TBC - check units here
-    if ( std::abs((*k)->Position.Z() - (*(k-1))->Position.Z())/10.0 > (2*fVertexSpaceSize) ||
-         std::abs((*k)->Position.T() - (*(k-1))->Position.Z())/c_light > 2*0.010 ) {
-      // close a cluster
-      clusters.Add(aCluster);
-      //aCluster.clear();
-    }
-    //for(unsigned int i=0; i<k->GetCandidates().GetEntriesFast(); i++){
-      aCluster = *k;
-    //}
-
-  }
-  clusters.Add(aCluster);
-
-  if(fVerbose) { std::cout << "# VertexFinderDAClusterizerZT::clusterize clusters.size="<<clusters.GetEntriesFast() << std::endl; }
-
-}
-
-//------------------------------------------------------------------------------
-
-vector< Candidate* > VertexFinderDAClusterizerZT::vertices()
-{
-  Candidate *candidate;
-  UInt_t clusterIndex = 0;
-  vector< Candidate* > clusters;
-
   tracks_t tks;
   fill(tks);
 
   unsigned int nt=tks.getSize();
   double rho0=0.0;  // start with no outlier rejection
 
+  vector< Candidate* > clusters;
   if (nt == 0) return clusters;
 
   vertex_t vtx; // the vertex prototypes
   // initialize:single vertex at infinite temperature
   vtx.addItem(0, 0, 1);
 
-  // Fit the vertex at T=inf and return first critical temperature
+  // Fit the vertex at T=inf and return the starting temperature
   double beta=beta0(tks, vtx);
 
-  unsigned int niter=0;
-  double delta2 = 0;
-  do  {
-    delta2 = update(beta, tks, vtx, rho0);
-    niter++;
-  }
-  while (delta2 > 1. &&  niter < maxIterations_)
-  // --- HERE HERE ---///
-
-  // annealing loop, stop when T<Tmin  (i.e. beta>1/Tmin)
-  while(beta<fBetaMax){
-
-    if(fUseTc){
-      update1(beta, tks,y);
-      while(merge(y,beta)){update1(beta, tks,y);}
-      split(beta, tks,y);
-      beta=beta/fCoolingFactor;
+  // Cool down untill reaching the temperature to finish increasing the number of vertexes
+  while(beta < fBetaPurge)
+  {
+    unsigned int niter=0;
+    double delta2 = 0;
+    do  {
+      delta2 = update(beta, tks, vtx, rho0);
+      niter++;
     }
-    else{
-      beta=beta/fCoolingFactor;
-      splitAll(y);
+    while (delta2 > 1. &&  niter < fMaxIterations)
+
+    beta /= fCoolingFactor;
+    if(beta < fBetaStop) split(beta, vtx);
+  }
+
+  // Merge vertexes which are too close
+  while(merge(vtx, 2))
+  {
+    unsigned int niter=0;
+    double delta2 = 0;
+    do  {
+      delta2 = update(beta, tks, vtx, rho0);
+      niter++;
     }
-
-   // make sure we are not too far from equilibrium before cooling further
-   niter=0; while((update1(beta, tks,y)>1.e-6)  && (niter++ < fMaxIterations)){ }
-
+    while (delta2 > 1. &&  niter < fMaxIterations)
   }
 
-  if(fUseTc){
-    // last round of splitting, make sure no critical clusters are left
-    update1(beta, tks,y);
-    while(merge(y,beta)){update1(beta, tks,y);}
-    unsigned int ntry=0;
-    while( split(beta, tks,y) && (ntry++<10) ){
-      niter=0;
-      while((update1(beta, tks,y)>1.e-6)  && (niter++ < fMaxIterations)){}
-      merge(y,beta);
-      update1(beta, tks,y);
+  // Cooldown untill the limit before assigning track to vertices
+  while(beta < fBetaMax)
+  {
+    unsigned int niter=0;
+    double delta2 = 0;
+    do  {
+      delta2 = update(beta, tks, vtx, rho0);
+      niter++;
     }
-  }else{
-    // merge collapsed clusters
-    while(merge(y,beta)){update1(beta, tks,y);}
-    if(fVerbose ){ cout << "dump after 1st merging " << endl;  dump(beta,y,tks);}
-  }
+    while (delta2 > 1. &&  niter < fMaxIterations)
 
-  // switch on outlier rejection
-  rho0=1./nt; for(vector<vertex_t>::iterator k=y.begin(); k!=y.end(); k++){ k->pk =1.; }  // democratic
-  niter=0; while((update2(beta, tks,y,rho0, fDzCutOff) > 1.e-8)  && (niter++ < fMaxIterations)){  }
-  if(fVerbose  ){ cout << "rho0=" << rho0 <<   " niter=" << niter <<  endl; dump(beta,y,tks);}
-
-
-  // merge again  (some cluster split by outliers collapse here)
-  while(merge(y)){}
-  if(fVerbose  ){ cout << "dump after 2nd merging " << endl;  dump(beta,y,tks);}
-
-
-  // continue from freeze-out to Tstop (=1) without splitting, eliminate insignificant vertices
-  while(beta<=fBetaStop){
-    while(purge(y,tks,rho0, beta, fDzCutOff)){
-      niter=0; while((update2(beta, tks, y, rho0, fDzCutOff) > 1.e-6)  && (niter++ < fMaxIterations)){  }
-    }
-    beta/=fCoolingFactor;
-    niter=0; while((update2(beta, tks, y, rho0, fDzCutOff) > 1.e-6)  && (niter++ < fMaxIterations)){  }
+    beta /= fCoolingFactor;
   }
 
 
-  //   // new, one last round of cleaning at T=Tstop
-  //   while(purge(y,tks,rho0, beta)){
-  //     niter=0; while((update2(beta, tks,y,rho0, fDzCutOff) > 1.e-6)  && (niter++ < fMaxIterations)){  }
-  //   }
-
-
-  if(fVerbose){
-   cout << "Final result, rho0=" << rho0 << endl;
-   dump(beta,y,tks);
-  }
-
-
-  // select significant tracks and use a TransientVertex as a container
-  //GlobalError dummyError;
-
-  // ensure correct normalization of probabilities, should make double assginment reasonably impossible
-  for(unsigned int i=0; i<nt; i++){
-    tks[i].Z=rho0*exp(-beta*( fDzCutOff*fDzCutOff));
-    for(vector<vertex_t>::iterator k=y.begin(); k!=y.end(); k++){
-      tks[i].Z += k->pk * exp(-beta*Eik(tks[i],*k));
-    }
-  }
-
-  for(vector<vertex_t>::iterator k=y.begin(); k!=y.end(); k++){
-
+  // Build the cluster candidates
+  for(unsigned int k = 0; k < vtx.getSize(); k++)
+  {
     DelphesFactory *factory = GetFactory();
-    candidate = factory->NewCandidate();
+    Candidate * candidate = factory->NewCandidate();
 
-    //cout<<"new vertex"<<endl;
-    //GlobalPoint pos(0, 0, k->z);
-    double time = k->t;
-    double z = k->z;
-    //vector< reco::TransientTrack > vertexTracks;
-    //double max_tracks_time_err2 = 0;
-    double mean = 0.;
-    double expv_x2 = 0.;
-    double normw = 0.;
-    for(unsigned int i=0; i<nt; i++){
-      const double invdt = 1.0/std::sqrt(tks[i].dt2);
-      if(tks[i].Z>0){
-          double p = k->pk * exp(-beta*Eik(tks[i],*k)) / tks[i].Z;
-          if( (tks[i].pi>0) && ( p > 0.5 ) ){
-            //std::cout << "pushing back " << i << ' ' << tks[i].tt << std::endl;
-            //vertexTracks.push_back(*(tks[i].tt)); tks[i].Z=0;
+    candidate->ClusterIndex = k;
+    candidate->Position.SetXYZT(0.0, 0.0, vtx.z[k] , vtx.t[k]*1E-9*c_light);
 
-            candidate->AddCandidate(tks[i].tt); tks[i].Z=0;
+    clusters.Add(candidate);
+  }
 
-            mean     += tks[i].t*invdt*p;
-            expv_x2  += tks[i].t*tks[i].t*invdt*p;
-            normw    += invdt*p;
-          } // setting Z=0 excludes double assignment
+
+  // Assign each track to the closest vertex
+  for(unsigned int i = 0; i< tks.getSize(); i++)
+  {
+    double d2_min = 0;
+    unsigned int k_min;
+
+    for(unsigned int k = 0; k < vtx.getSize(); k++)
+    {
+      double d2 = Energy(tks.z[i], vtx.z[k], tks.dz2_o[i], tks.t[i], vtx.t[k], tks.dt2_o[i])
+
+      if (k == 0 || d2 < d2_min)
+      {
+        d2_min = d2;
+        k_min = k;
       }
     }
 
-    mean = mean/normw;
-    expv_x2 = expv_x2/normw;
-    const double time_var = expv_x2 - mean*mean;
-    const double crappy_error_guess = std::sqrt(time_var);
-    /*GlobalError dummyErrorWithTime(0,
-                                   0,0,
-                                   0,0,0,
-                                   0,0,0,crappy_error_guess);*/
-    //TransientVertex v(pos, time, dummyErrorWithTime, vertexTracks, 5);
-
-
-    candidate->ClusterIndex = clusterIndex++;;
-    candidate->Position.SetXYZT(0.0, 0.0, z*10.0 , time*c_light);
-
-    // TBC - fill error later ...
-    candidate->PositionError.SetXYZT(0.0, 0.0, 0.0 , crappy_error_guess*c_light);
-
-    clusterIndex++;
-    clusters.push_back(candidate);
+    tks.tt[i]->ClusterIndex = k_min;
+    ((Candidate *) clusters.At(k_min))->AddCandidate(tks.tt[i]);
   }
-
-
-  return clusters;
-
 }
 
 //------------------------------------------------------------------------------
@@ -698,186 +569,83 @@ double VertexFinderDAClusterizerZT::update(double beta, tracks_t &tks, vertex_t 
 }
 
 //------------------------------------------------------------------------------
-
-static bool VertexFinderDAClusterizerZT::merge(vector<vertex_t> &y, double &beta)
+// Split critical vertices (beta_c < beta)
+// Returns true if at least one cluster was split
+static bool VertexFinderDAClusterizerZT::split(double beta, vertex_t &vtx, const double epsilon = 2.)
 {
-  // merge clusters that collapsed or never separated,
-  // only merge if the estimated critical temperature of the merged vertex is below the current temperature
-  // return true if vertices were merged, false otherwise
-  if(y.size()<2)  return false;
-
-  for(vector<vertex_t>::iterator k=y.begin(); (k+1)!=y.end(); k++){
-    if ( std::abs((k+1)->z - k->z) < 2.e-3 &&
-         std::abs((k+1)->t - k->t) < 2.e-3    ) {
-      double rho=k->pk + (k+1)->pk;
-      double swE=k->swE+(k+1)->swE - k->pk * (k+1)->pk / rho * ( std::pow((k+1)->z - k->z,2.) +
-                                                                 std::pow((k+1)->t - k->t,2.)   );
-      double Tc=2*swE/(k->sw+(k+1)->sw);
-
-      if(Tc*beta<1){
-  if(rho>0){
-    k->z = ( k->pk * k->z + (k+1)->z * (k+1)->pk)/rho;
-          k->t = ( k->pk * k->t + (k+1)->t * (k+1)->pk)/rho;
-  }else{
-    k->z = 0.5*(k->z + (k+1)->z);
-          k->t = 0.5*(k->t + (k+1)->t);
-  }
-  k->pk  = rho;
-  k->sw += (k+1)->sw;
-  k->swE = swE;
-  k->Tc  = Tc;
-  y.erase(k+1);
-  return true;
-      }
-    }
-  }
-
-  return false;
-}
-
-//------------------------------------------------------------------------------
-
-static bool VertexFinderDAClusterizerZT::purge(vector<vertex_t> &y, vector<tracks_t> &tks, double & rho0, const double beta, const double dzCutOff)
-{
-  // eliminate clusters with only one significant/unique track
-  if(y.size()<2)  return false;
-
-  unsigned int nt=tks.size();
-  double sumpmin=nt;
-  vector<vertex_t>::iterator k0=y.end();
-  for(vector<vertex_t>::iterator k=y.begin(); k!=y.end(); k++){
-    int nUnique=0;
-    double sump=0;
-    double pmax=k->pk/(k->pk+rho0*exp(-beta*dzCutOff*dzCutOff));
-    for(unsigned int i=0; i<nt; i++){
-      if(tks[i].Z > 0){
-  double p = k->pk * std::exp(-beta*Eik(tks[i],*k)) / tks[i].Z ;
-  sump+=p;
-  if( (p > 0.9*pmax) && (tks[i].pi>0) ){ nUnique++; }
-      }
-    }
-
-    if((nUnique<2)&&(sump<sumpmin)){
-      sumpmin=sump;
-      k0=k;
-    }
-  }
-
-  if(k0!=y.end()){
-    //cout << "eliminating prototype at " << k0->z << "," << k0->t << " with sump=" << sumpmin << endl;
-    //rho0+=k0->pk;
-    y.erase(k0);
-    return true;
-  }else{
-    return false;
-  }
-}
-
-
-//------------------------------------------------------------------------------
-
-static bool VertexFinderDAClusterizerZT::split(double beta, vector<tracks_t> &tks, vector<vertex_t> &y)
-{
-  // split only critical vertices (Tc >~ T=1/beta   <==>   beta*Tc>~1)
-  // an update must have been made just before doing this (same beta, no merging)
-  // returns true if at least one cluster was split
-
-  const double epsilon = 1e-3; // split all single vertices by 10 um
   bool split = false;
 
-  // avoid left-right biases by splitting highest Tc first
+  auto pair_bc_k = vtx.ComputeAllBeta_c();
 
-  std::vector<std::pair<double, unsigned int> > critical;
-  for(unsigned int ik=0; ik<y.size(); ik++){
-    if (beta*y[ik].Tc > 1.){
-      critical.push_back( make_pair(y[ik].Tc, ik));
-    }
+  // If minimum beta_c is higher than beta, no split is necessaire
+  if( pair_bc_k.first > beta )
+  {
+    split = false;
   }
-  std::stable_sort(critical.begin(), critical.end(), std::greater<std::pair<double, unsigned int> >() );
+  else
+  {
+    for(unsigned int k = 0; k < vtx.getSize(), k++)
+    {
+      if(vtx.beta_c[k] <= beta)
+      {
+        split = true;
+        // Compute splitting direction: given by the max eighenvalue eighenvector
+        double z_old = vtx.z[k];
+        double t_old = vtx.t[k];
+        double pk_old = vtx.pk[k];
 
-  for(unsigned int ic=0; ic<critical.size(); ic++){
-    unsigned int ik=critical[ic].second;
-    // estimate subcluster positions and weight
-    double p1=0, z1=0, t1=0, w1=0;
-    double p2=0, z2=0, t2=0, w2=0;
-    //double sumpi=0;
-    for(unsigned int i=0; i<tks.size(); i++){
-      if(tks[i].Z>0){
-  //sumpi+=tks[i].pi;
-  double p=y[ik].pk * exp(-beta*Eik(tks[i],y[ik])) / tks[i].Z*tks[i].pi;
-  double w=p/(tks[i].dz2 * tks[i].dt2);
-  if(tks[i].z < y[ik].z){
-    p1+=p; z1+=w*tks[i].z; t1+=w*tks[i].t; w1+=w;
-  }else{
-    p2+=p; z2+=w*tks[i].z; t2+=w*tks[i].t; w2+=w;
-  }
-      }
-    }
-    if(w1>0){  z1=z1/w1; t1=t1/w1;} else{ z1=y[ik].z-epsilon; t1=y[ik].t-epsilon; }
-    if(w2>0){  z2=z2/w2; t2=t2/w2;} else{ z2=y[ik].z+epsilon; t2=y[ik].t+epsilon;}
+        double aux_slope = (vxt.szz[k] - vxt.stt[k])*(vxt.szz[k] - vxt.stt[k]) + 4*vtx.stz[k];
+        aux_slope = vtx.szz[k] - vtx.stt[k] - sqrt(aux_slope);
+        aux_slope = -2*vtx.stz[k] / aux_slope;
 
-    // reduce split size if there is not enough room
-    if( ( ik   > 0       ) && ( y[ik-1].z>=z1 ) ){ z1=0.5*(y[ik].z+y[ik-1].z); t1=0.5*(y[ik].t+y[ik-1].t); }
-    if( ( ik+1 < y.size()) && ( y[ik+1].z<=z2 ) ){ z2=0.5*(y[ik].z+y[ik+1].z); t2=0.5*(y[ik].t+y[ik+1].t); }
+        vtx.t[k] = t_old + epsilon*fVertexTimeSize;
+        vtx.z[k] = z_old + aux_slope * epsilon * fVertexSpaceSize;
+        vtx.pk[k] = pk_old/2.;
 
-    // split if the new subclusters are significantly separated
-    if( (z2-z1)>epsilon || std::abs(t2-t1) > epsilon){
-      split=true;
-      vertex_t vnew;
-      vnew.pk = p1*y[ik].pk/(p1+p2);
-      y[ik].pk= p2*y[ik].pk/(p1+p2);
-      vnew.z  = z1;
-      vnew.t  = t1;
-      y[ik].z = z2;
-      y[ik].t = t2;
-      y.insert(y.begin()+ik, vnew);
+        new_t = t_old - epsilon*fVertexTimeSize;
+        new_z = z_old - aux_slope * epsilon * fVertexSpaceSize;
+        new_pk = pk_old/2.;
 
-     // adjust remaining pointers
-      for(unsigned int jc=ic; jc<critical.size(); jc++){
-        if (critical[jc].second>ik) {critical[jc].second++;}
+        vtx.addItem(new_z, new_t, new_pk);
       }
     }
   }
 
-  //  stable_sort(y.begin(), y.end(), clusterLessZ);
   return split;
 }
 
+
 //------------------------------------------------------------------------------
-
-void VertexFinderDAClusterizerZT::splitAll(vector<vertex_t> &y)
+// Merge vertexes closer than declared dimensions
+static bool VertexFinderDAClusterizerZT::merge(vertex_t & vtx, double d2_merge = 2)
 {
+  bool merged = false;
+  unsigned int k1 = 0, k2 =0;
 
+  for(unsigned int k1 = 0; k1 < vtx.getSize(); k1++)
+  {
+    k2 = 0;
+    for(unsigned int k2 = k1+1; k2 < vtx.getSize();)
+    {
+      if(vtx.DistanceSquare(k1, k2) > d2_merge)
+      {
+        k2++;
+      }
+      else
+      {
+        double new_pk = pk[k1] + pk[k2];
+        double new_z = (z[k1]*pk[k1] + z[k2]*pk[k2])/new_pk;
+        double new_t = (t[k1]*pk[k1] + t[k2]*pk[k2])/new_pk;
 
-  const double epsilon=1e-3;      // split all single vertices by 10 um
-  const double zsep=2*epsilon;    // split vertices that are isolated by at least zsep (vertices that haven't collapsed)
-  const double tsep=2*epsilon;    // check t as well
+        vtx.removeItem(k2);
+        vtx.z[k1] = new_z;
+        vtx.t[k1] = new_t;
+        vtx.pk[k1] = new_pk;
 
-  vector<vertex_t> y1;
-
-  for(vector<vertex_t>::iterator k=y.begin(); k!=y.end(); k++){
-    if ( ( (k==y.begin())|| (k-1)->z < k->z - zsep) && (((k+1)==y.end()  )|| (k+1)->z > k->z + zsep)) {
-      // isolated prototype, split
-      vertex_t vnew;
-      vnew.z  = k->z - epsilon;
-      vnew.t  = k->t - epsilon;
-      (*k).z  = k->z + epsilon;
-      (*k).t  = k->t + epsilon;
-      vnew.pk= 0.5* (*k).pk;
-      (*k).pk= 0.5* (*k).pk;
-      y1.push_back(vnew);
-      y1.push_back(*k);
-
-    }else if( y1.empty() || (y1.back().z < k->z -zsep) || (y1.back().t < k->t - tsep) ){
-      y1.push_back(*k);
-    }else{
-      y1.back().z -= epsilon;
-      y1.back().t -= epsilon;
-      k->z += epsilon;
-      k->t += epsilon;
-      y1.push_back(*k);
+        merged = true;
+      }
     }
-  }// vertex loop
+  }
 
-  y=y1;
+  return merged;
 }

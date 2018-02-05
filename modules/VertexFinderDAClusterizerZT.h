@@ -127,20 +127,17 @@ class VertexFinderDAClusterizerZT: public DelphesModule
         beta_c.erase(beta_c.begin() + i);
       }
 
-      unsigned int insertOrdered( double z, double t, double pk){
-        // insert a new cluster according to it's z-position, return the index at which it was inserted
-        unsigned int k = 0;
-        for( ; k < getSize(); k++)
-        {
-        	if (z < z_[k]) break;
-        }
-        insertItem(k ,z, t, pk);
-        return k;
-      }
-
       unsigned int getSize() const
       {
         return z.size();
+      }
+
+      double DistanceSquare(unsigned int k1, unsigned int k1)
+      {
+        double dz = (z[k1] - z[k2])/fVertexSpaceSize;
+        double dt = (t[k1] - t[k2])/fVertexTimeSize;
+
+        return dz*dz + dt*dt;
       }
 
       pair<double, int> ComputeAllBeta_c()
@@ -181,8 +178,6 @@ class VertexFinderDAClusterizerZT: public DelphesModule
 
     void clusterize(const TObjArray &tracks, TObjArray &clusters);
 
-    std::vector< Candidate* > vertices();
-
     // Define the distance metric between tracks and vertices
     double Energy(double t_z, double v_z, double dz2_o, double t_t, double v_t, double dt2_o);
 
@@ -195,18 +190,11 @@ class VertexFinderDAClusterizerZT: public DelphesModule
     // Compute the new vertexes position and mass
     double update(double beta, tracks_t &tks, vertex_t &vtx, double rho0);
 
-    void zorder(vertex_t & y);
+    // If a vertex has beta_c lower than beta, split it
+    bool split(const double beta,  vertex_t & vtx, const double epsilon = 2.);
 
-    bool find_nearest(double z, double t, vertex_t & y, unsigned int & k_min, double dz, double dt);
-
-    bool merge(vertex_t & y, double & beta);
-
-    bool purge(vertex_t &, tracks_t &, double &, const double);
-
-    void splitAll( vertex_t & y);
-
-    bool split(const double beta,  tracks_t &t, vertex_t & y, double threshold = 1.);
-
+    // Merge vertexes closer than declared dimensions
+    bool merge(vertex_t & vtx, double d2_merge);
 
 
 
