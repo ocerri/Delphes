@@ -143,7 +143,7 @@ class VertexFinderDAClusterizerZT: public DelphesModule
             double aux = (stt[k] - szz[k])*(stt[k] - szz[k]) + 4*stz[k]*stz[k];
             aux = 1. / (stt[k] + szz[k] + sqrt(aux));
 
-            if(aux > beta_c_min)
+            if(k == 0 || aux < beta_c_min)
             {
               beta_c_min = aux;
               k_min = k;
@@ -207,6 +207,7 @@ class VertexFinderDAClusterizerZT: public DelphesModule
     Double_t fD0CutOff;
     Double_t fDtCutOff;
 
+    Double_t fD2UpdateLim;
     Double_t fD2Merge;
     Double_t fSplittingSize;
 
