@@ -390,6 +390,7 @@ tmp/modules/ModulesDict.$(SrcSuf): \
 	modules/VertexSorter.h \
 	modules/VertexFinder.h \
 	modules/VertexFinderDA4D.h \
+	modules/VertexFinderDAClusterizerZT.h \
 	modules/ExampleModule.h
 tmp/modules/ModulesDict$(PcmSuf): \
 	tmp/modules/ModulesDict.$(SrcSuf)
@@ -961,6 +962,16 @@ tmp/modules/VertexFinderDA4D.$(ObjSuf): \
 	external/ExRootAnalysis/ExRootResult.h \
 	external/ExRootAnalysis/ExRootFilter.h \
 	external/ExRootAnalysis/ExRootClassifier.h
+tmp/modules/VertexFinderDAClusterizerZT.$(ObjSuf): \
+	modules/VertexFinderDAClusterizerZT.$(SrcSuf) \
+	modules/VertexFinderDAClusterizerZT.h \
+	classes/DelphesClasses.h \
+	classes/DelphesFactory.h \
+	classes/DelphesFormula.h \
+	classes/DelphesPileUpReader.h \
+	external/ExRootAnalysis/ExRootResult.h \
+	external/ExRootAnalysis/ExRootFilter.h \
+	external/ExRootAnalysis/ExRootClassifier.h
 tmp/modules/VertexSorter.$(ObjSuf): \
 	modules/VertexSorter.$(SrcSuf) \
 	modules/VertexSorter.h \
@@ -1070,6 +1081,7 @@ DELPHES_OBJ +=  \
 	tmp/modules/UniqueObjectFinder.$(ObjSuf) \
 	tmp/modules/VertexFinder.$(ObjSuf) \
 	tmp/modules/VertexFinderDA4D.$(ObjSuf) \
+	tmp/modules/VertexFinderDAClusterizerZT.$(ObjSuf) \
 	tmp/modules/VertexSorter.$(ObjSuf) \
 	tmp/modules/Weighter.$(ObjSuf)
 
@@ -1728,6 +1740,10 @@ external/fastjet/ClusterSequenceActiveAreaExplicitGhosts.hh: \
 	external/fastjet/ClusterSequenceAreaBase.hh \
 	external/fastjet/GhostedAreaSpec.hh \
 	external/fastjet/LimitedWarning.hh
+	@touch $@
+
+modules/VertexFinderDAClusterizerZT.h: \
+	classes/DelphesModule.h
 	@touch $@
 
 external/fastjet/JetDefinition.hh: \

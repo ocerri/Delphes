@@ -46,6 +46,7 @@ public:
 
 private:
 
+  Int_t fVerbose;
   Int_t fPileUpDistribution;
   Double_t fMeanPileUp;
 

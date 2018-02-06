@@ -70,6 +70,7 @@
 #include "modules/VertexSorter.h"
 #include "modules/VertexFinder.h"
 #include "modules/VertexFinderDA4D.h"
+#include "modules/VertexFinderDAClusterizerZT.h"
 #include "modules/ExampleModule.h"
 
 #ifdef __CINT__
@@ -121,6 +122,7 @@
 #pragma link C++ class VertexSorter+;
 #pragma link C++ class VertexFinder+;
 #pragma link C++ class VertexFinderDA4D+;
+#pragma link C++ class VertexFinderDAClusterizerZT+;
 #pragma link C++ class ExampleModule+;
 
 #endif
@@ -205,6 +207,7 @@ namespace std {} using namespace std;
 #include "modules/VertexSorter.h"
 #include "modules/VertexFinder.h"
 #include "modules/VertexFinderDA4D.h"
+#include "modules/VertexFinderDAClusterizerZT.h"
 #include "modules/ExampleModule.h"
 
 // Header files passed via #pragma extra_include
@@ -1551,6 +1554,38 @@ namespace ROOT {
    }
    // Static variable to force the class initialization
    static ::ROOT::TGenericClassInfo *_R__UNIQUE_DICT_(Init) = GenerateInitInstanceLocal((const ::VertexFinderDA4D*)0x0); R__UseDummy(_R__UNIQUE_DICT_(Init));
+} // end of namespace ROOT
+
+namespace ROOT {
+   static void *new_VertexFinderDAClusterizerZT(void *p = 0);
+   static void *newArray_VertexFinderDAClusterizerZT(Long_t size, void *p);
+   static void delete_VertexFinderDAClusterizerZT(void *p);
+   static void deleteArray_VertexFinderDAClusterizerZT(void *p);
+   static void destruct_VertexFinderDAClusterizerZT(void *p);
+
+   // Function generating the singleton type initializer
+   static TGenericClassInfo *GenerateInitInstanceLocal(const ::VertexFinderDAClusterizerZT*)
+   {
+      ::VertexFinderDAClusterizerZT *ptr = 0;
+      static ::TVirtualIsAProxy* isa_proxy = new ::TInstrumentedIsAProxy< ::VertexFinderDAClusterizerZT >(0);
+      static ::ROOT::TGenericClassInfo 
+         instance("VertexFinderDAClusterizerZT", ::VertexFinderDAClusterizerZT::Class_Version(), "modules/VertexFinderDAClusterizerZT.h", 21,
+                  typeid(::VertexFinderDAClusterizerZT), ::ROOT::Internal::DefineBehavior(ptr, ptr),
+                  &::VertexFinderDAClusterizerZT::Dictionary, isa_proxy, 4,
+                  sizeof(::VertexFinderDAClusterizerZT) );
+      instance.SetNew(&new_VertexFinderDAClusterizerZT);
+      instance.SetNewArray(&newArray_VertexFinderDAClusterizerZT);
+      instance.SetDelete(&delete_VertexFinderDAClusterizerZT);
+      instance.SetDeleteArray(&deleteArray_VertexFinderDAClusterizerZT);
+      instance.SetDestructor(&destruct_VertexFinderDAClusterizerZT);
+      return &instance;
+   }
+   TGenericClassInfo *GenerateInitInstance(const ::VertexFinderDAClusterizerZT*)
+   {
+      return GenerateInitInstanceLocal((::VertexFinderDAClusterizerZT*)0);
+   }
+   // Static variable to force the class initialization
+   static ::ROOT::TGenericClassInfo *_R__UNIQUE_DICT_(Init) = GenerateInitInstanceLocal((const ::VertexFinderDAClusterizerZT*)0x0); R__UseDummy(_R__UNIQUE_DICT_(Init));
 } // end of namespace ROOT
 
 namespace ROOT {
@@ -3056,6 +3091,41 @@ TClass *VertexFinderDA4D::Class()
 }
 
 //______________________________________________________________________________
+atomic_TClass_ptr VertexFinderDAClusterizerZT::fgIsA(0);  // static to hold class pointer
+
+//______________________________________________________________________________
+const char *VertexFinderDAClusterizerZT::Class_Name()
+{
+   return "VertexFinderDAClusterizerZT";
+}
+
+//______________________________________________________________________________
+const char *VertexFinderDAClusterizerZT::ImplFileName()
+{
+   return ::ROOT::GenerateInitInstanceLocal((const ::VertexFinderDAClusterizerZT*)0x0)->GetImplFileName();
+}
+
+//______________________________________________________________________________
+int VertexFinderDAClusterizerZT::ImplFileLine()
+{
+   return ::ROOT::GenerateInitInstanceLocal((const ::VertexFinderDAClusterizerZT*)0x0)->GetImplFileLine();
+}
+
+//______________________________________________________________________________
+TClass *VertexFinderDAClusterizerZT::Dictionary()
+{
+   fgIsA = ::ROOT::GenerateInitInstanceLocal((const ::VertexFinderDAClusterizerZT*)0x0)->GetClass();
+   return fgIsA;
+}
+
+//______________________________________________________________________________
+TClass *VertexFinderDAClusterizerZT::Class()
+{
+   if (!fgIsA.load()) { R__LOCKGUARD2(gInterpreterMutex); fgIsA = ::ROOT::GenerateInitInstanceLocal((const ::VertexFinderDAClusterizerZT*)0x0)->GetClass(); }
+   return fgIsA;
+}
+
+//______________________________________________________________________________
 atomic_TClass_ptr ExampleModule::fgIsA(0);  // static to hold class pointer
 
 //______________________________________________________________________________
@@ -4477,6 +4547,39 @@ namespace ROOT {
 } // end of namespace ROOT for class ::VertexFinderDA4D
 
 //______________________________________________________________________________
+void VertexFinderDAClusterizerZT::Streamer(TBuffer &R__b)
+{
+   // Stream an object of class VertexFinderDAClusterizerZT.
+
+   if (R__b.IsReading()) {
+      R__b.ReadClassBuffer(VertexFinderDAClusterizerZT::Class(),this);
+   } else {
+      R__b.WriteClassBuffer(VertexFinderDAClusterizerZT::Class(),this);
+   }
+}
+
+namespace ROOT {
+   // Wrappers around operator new
+   static void *new_VertexFinderDAClusterizerZT(void *p) {
+      return  p ? new(p) ::VertexFinderDAClusterizerZT : new ::VertexFinderDAClusterizerZT;
+   }
+   static void *newArray_VertexFinderDAClusterizerZT(Long_t nElements, void *p) {
+      return p ? new(p) ::VertexFinderDAClusterizerZT[nElements] : new ::VertexFinderDAClusterizerZT[nElements];
+   }
+   // Wrapper around operator delete
+   static void delete_VertexFinderDAClusterizerZT(void *p) {
+      delete ((::VertexFinderDAClusterizerZT*)p);
+   }
+   static void deleteArray_VertexFinderDAClusterizerZT(void *p) {
+      delete [] ((::VertexFinderDAClusterizerZT*)p);
+   }
+   static void destruct_VertexFinderDAClusterizerZT(void *p) {
+      typedef ::VertexFinderDAClusterizerZT current_t;
+      ((current_t*)p)->~current_t();
+   }
+} // end of namespace ROOT for class ::VertexFinderDAClusterizerZT
+
+//______________________________________________________________________________
 void ExampleModule::Streamer(TBuffer &R__b)
 {
    // Stream an object of class ExampleModule.
@@ -5324,6 +5427,7 @@ class __attribute__((annotate("$clingAutoload$modules/JetFakeParticle.h")))  Jet
 class __attribute__((annotate("$clingAutoload$modules/VertexSorter.h")))  VertexSorter;
 class __attribute__((annotate("$clingAutoload$modules/VertexFinder.h")))  VertexFinder;
 class __attribute__((annotate("$clingAutoload$modules/VertexFinderDA4D.h")))  VertexFinderDA4D;
+class __attribute__((annotate("$clingAutoload$modules/VertexFinderDAClusterizerZT.h")))  VertexFinderDAClusterizerZT;
 class __attribute__((annotate("$clingAutoload$modules/ExampleModule.h")))  ExampleModule;
 )DICTFWDDCLS";
     static const char* payloadCode = R"DICTPAYLOAD(
@@ -5404,6 +5508,7 @@ class __attribute__((annotate("$clingAutoload$modules/ExampleModule.h")))  Examp
 #include "modules/VertexSorter.h"
 #include "modules/VertexFinder.h"
 #include "modules/VertexFinderDA4D.h"
+#include "modules/VertexFinderDAClusterizerZT.h"
 #include "modules/ExampleModule.h"
 
 #ifdef __CINT__
@@ -5455,6 +5560,7 @@ class __attribute__((annotate("$clingAutoload$modules/ExampleModule.h")))  Examp
 #pragma link C++ class VertexSorter+;
 #pragma link C++ class VertexFinder+;
 #pragma link C++ class VertexFinderDA4D+;
+#pragma link C++ class VertexFinderDAClusterizerZT+;
 #pragma link C++ class ExampleModule+;
 
 #endif
@@ -5503,6 +5609,7 @@ class __attribute__((annotate("$clingAutoload$modules/ExampleModule.h")))  Examp
 "UniqueObjectFinder", payloadCode, "@",
 "VertexFinder", payloadCode, "@",
 "VertexFinderDA4D", payloadCode, "@",
+"VertexFinderDAClusterizerZT", payloadCode, "@",
 "VertexSorter", payloadCode, "@",
 "Weighter", payloadCode, "@",
 nullptr};

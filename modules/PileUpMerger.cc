@@ -72,6 +72,8 @@ void PileUpMerger::Init()
 {
   const char *fileName;
 
+  fVerbose = GetInt("Verbose", 0);
+
   fPileUpDistribution = GetInt("PileUpDistribution", 0);
 
   fMeanPileUp  = GetDouble("MeanPileUp", 10);
@@ -117,7 +119,7 @@ void PileUpMerger::Process()
   Int_t pid, nch, nvtx = -1;
   Float_t x, y, z, t, vx, vy;
   Float_t px, py, pz, e, pt;
-  Double_t dz, dphi, dt, sumpt2, dz0, dt0;
+  Double_t dz, dphi, dt, sumpt2;
   Int_t numberOfEvents, event, numberOfParticles;
   Long64_t allEntries, entry;
   Candidate *candidate, *vertex;
@@ -130,9 +132,11 @@ void PileUpMerger::Process()
   // --- Deal with primary vertex first  ------
 
   fFunction->GetRandom2(dz, dt);
-
-  dz0 = 0; //-1.0e6;
-  dt0 = 0; //-1.0e6;
+  if(fVerbose)
+  {
+    cout << "-------------PU Merger---------------------" << endl;
+    cout << setprecision(3) << "PV position: z=" << dz*1E3 << " , t=" << dt*1E12 << endl;
+  }
 
   dt *= c_light*1.0E3; // necessary in order to make t in mm/c
   dz *= 1.0E3; // necessary in order to make z in mm
@@ -157,15 +161,9 @@ void PileUpMerger::Process()
     t = candidate->Position.T();
     pt = candidate->Momentum.Pt();
 
-    // take postion and time from first stable particle
-    if (dz0 < -999999.0)
-      dz0 = z;
-    if (dt0 < -999999.0)
-      dt0 = t;
-
     // cancel any possible offset in position and time the input file
-    candidate->Position.SetZ(z - dz0 + dz);
-    candidate->Position.SetT(t - dt0 + dt);
+    candidate->Position.SetZ(z + dz);
+    candidate->Position.SetT(t + dt);
 
     candidate->IsPU = 0;
 
@@ -231,6 +229,10 @@ void PileUpMerger::Process()
    // --- Pile-up vertex smearing
 
     fFunction->GetRandom2(dz, dt);
+    if(fVerbose)
+    {
+      cout << setprecision(3) << "PU position: z=" << dz*1E3 << " , t=" << dt*1E12 << endl;
+    }
 
     dt *= c_light*1.0E3; // necessary in order to make t in mm/c
     dz *= 1.0E3; // necessary in order to make z in mm
@@ -291,6 +293,10 @@ void PileUpMerger::Process()
     }
 
     nvtx++;
+
+    // Add Olmo
+    vx = 0;
+    vy = 0;
 
     vertex->Position.SetXYZT(vx, vy, dz, dt);
 
