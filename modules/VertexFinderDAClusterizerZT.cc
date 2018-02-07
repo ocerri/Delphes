@@ -90,9 +90,9 @@ void VertexFinderDAClusterizerZT::Init()
 
   // !!FIX defaul values
   // DzCutOff also used as initializer to Z_init to do outlayers, as D0CutOff must be O(1) and find anew way to the flowwing line meaning (add new var)
-  fDzCutOff        = GetDouble("DzCutOff", 40);  // don't know yet. For the moment 30*DzCutOff is hard cut off for the considered tracks
-  fD0CutOff        = GetDouble("D0CutOff", 3);  // d0/sigma_d0, used to compute the pi (weight) of the track
-  fDtCutOff        = GetDouble("DtCutOff", 3);  // Used as first line for outlayer rejection O(1). Put only a parameter maybe and use the other for hard cutoff
+  fDzCutOff        = GetDouble("DzCutOff", 40);  // For the moment 3*DzCutOff is hard cut off for the considered tracks
+  fD0CutOff        = GetDouble("D0CutOff", 1);  // d0/sigma_d0, used to compute the pi (weight) of the track
+  fDtCutOff        = GetDouble("DtCutOff", 160);  // [ps], 3*DtCutOff is hard cut off for tracks
 
   fD2UpdateLim     = GetDouble("D2UpdateLim", 0.1); // (dz/ZSize)^2+(dt/TSize)^2 limit for merging vertices
   fD2Merge         = GetDouble("D2Merge", 2.0); // (dz/ZSize)^2+(dt/TSize)^2 limit for merging vertices
@@ -396,6 +396,7 @@ void VertexFinderDAClusterizerZT::fill(tracks_t &tks)
     bz = candidate->Momentum.Pt() * candidate->CtgTheta/e;
     t = candidate->Position.T()*1.E9/c_light; // from [mm] to [ps]
     t += (z - candidate->Position.Z())*1E9/(c_light*bz);
+    if(fabs(t) > 3*fDtCutOff) continue;
 
     dz2_o = candidate->ErrorDZ*candidate->ErrorDZ;
     dz2_o += fVertexZSize*fVertexZSize;
@@ -531,7 +532,7 @@ double VertexFinderDAClusterizerZT::update(double beta, tracks_t &tks, vertex_t 
     // Compute the posterior covariance matrix Elements
     double szz = 0, stt = 0, stz = 0;
     double sum_w = 0;
-    double sum_w_o_dt2 = 0, sum_w_o_dz2 = 0;
+    double sum_wt = 0, sum_wz = 0;
 
     for (unsigned int i = 0; i < nt; i++)
     {
@@ -548,10 +549,13 @@ double VertexFinderDAClusterizerZT::update(double beta, tracks_t &tks, vertex_t 
       sum_w += tks.w[i];
       pk_new += tks.w[i] * p_ygx;
 
-      sw_t += tks.w[i] * p_ygx * tks.t[i] * tks.dt2_o[i];
-      sum_w_o_dt2 += tks.w[i] * tks.dt2_o[i];
-      sw_z += tks.w[i] * p_ygx * tks.z[i] * tks.dz2_o[i];
-      sum_w_o_dz2 += tks.w[i] * tks.dz2_o[i];
+      double wt = tks.w[i] * p_ygx * tks.dt2_o[i];
+      sw_t += wt * tks.t[i];
+      sum_wt += wt;
+
+      double wz = tks.w[i] * p_ygx * tks.dz2_o[i];
+      sw_z += wz * tks.z[i];
+      sum_wz += wz;
 
       // Add the track contribution to the covariance matrix
       double p_xgy = p_ygx * tks.w[i] / vtx.pk[k];
@@ -571,8 +575,8 @@ double VertexFinderDAClusterizerZT::update(double beta, tracks_t &tks, vertex_t 
     szz /= sum_w;
     stz /= sum_w;
 
-    double new_t = sw_t/(sum_w_o_dt2 * vtx.pk[k]);
-    double new_z = sw_z/(sum_w_o_dz2 * vtx.pk[k]);
+    double new_t = sw_t/sum_wt;
+    double new_z = sw_z/sum_wz;
     if(isnan(new_z))
     {
       cout << "pk " << k << "  " << vtx.pk[k] << endl;
@@ -636,7 +640,7 @@ bool VertexFinderDAClusterizerZT::split(double &beta, vertex_t &vtx, double epsi
         double t_old = vtx.t[k];
         double pk_old = vtx.pk[k];
 
-        double aux_slope = (vtx.szz[k] - vtx.stt[k])*(vtx.szz[k] - vtx.stt[k]) + 4*vtx.stz[k];
+        double aux_slope = (vtx.szz[k] - vtx.stt[k])*(vtx.szz[k] - vtx.stt[k]) + 4*vtx.stz[k]*vtx.stz[k];
         aux_slope = vtx.szz[k] - vtx.stt[k] - sqrt(aux_slope);
         aux_slope = -2*vtx.stz[k] / aux_slope;
         // Move the vertex of epsilon
@@ -750,7 +754,7 @@ void VertexFinderDAClusterizerZT::plot_status(double beta, vertex_t &vtx, tracks
   auto c_2Dspace = new TCanvas("c_2Dspace", "c_2Dspace", 800, 600);
 
   TGraphErrors* gr_PVtks = new TGraphErrors(t_PV.size(), &t_PV[0], &z_PV[0], &dt_PV[0], &dz_PV[0]);
-  gr_PVtks->SetTitle("Clustering space");
+  gr_PVtks->SetTitle(Form("Clustering space - #beta = %.6f", beta);
   gr_PVtks->GetXaxis()->SetTitle("t CA [ps]");
   gr_PVtks->GetXaxis()->SetLimits(t_min, t_max);
   gr_PVtks->GetYaxis()->SetTitle("z CA [mm]");
@@ -768,14 +772,14 @@ void VertexFinderDAClusterizerZT::plot_status(double beta, vertex_t &vtx, tracks
   gr_vtx->SetMarkerSize(2.);
   gr_vtx->Draw("PE1");
 
-  auto leg = new TLegend(0.2, 0.2);
-  leg->AddEntry(gr_PVtks, "PV tks", "ep");
-  leg->AddEntry(gr_PUtks, "PU tks", "ep");
-  leg->AddEntry(gr_vtx, "Cluster center", "p");
-  leg->Draw();
+  // auto leg = new TLegend(0.1, 0.1);
+  // leg->AddEntry(gr_PVtks, "PV tks", "ep");
+  // leg->AddEntry(gr_PUtks, "PU tks", "ep");
+  // leg->AddEntry(gr_vtx, "Cluster center", "p");
+  // leg->Draw();
 
   c_2Dspace->SetGrid();
-  c_2Dspace->SaveAs(Form("~/Desktop/debug/c_2Dspace_beta%06.0f-%s%d.pdf", 1E5*beta, flag, n_it));
+  c_2Dspace->SaveAs(Form("~/Desktop/debug/c_2Dspace_beta%06.0f-%s%d.png", 1E6*beta, flag, n_it));
 
   delete c_2Dspace;
 }
