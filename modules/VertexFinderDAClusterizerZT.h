@@ -43,7 +43,6 @@ class VertexFinderDAClusterizerZT: public DelphesModule
 
         std::vector<int> PID;
 
-        double sum_w_o_dtdz = 0;
         double sum_w_o_dz2 = 0;
         double sum_w_o_dt2 = 0;
         double sum_w = 0;
@@ -128,7 +127,7 @@ class VertexFinderDAClusterizerZT: public DelphesModule
           return dz*dz + dt*dt;
         }
 
-        std::pair<double, int> ComputeAllBeta_c()
+        std::pair<double, unsigned int> ComputeAllBeta_c()
         {
           unsigned int nv = getSize();
           unsigned int k_min = 0;
@@ -179,12 +178,13 @@ class VertexFinderDAClusterizerZT: public DelphesModule
     double update(double beta, tracks_t &tks, vertex_t &vtx, double rho0);
 
     // If a vertex has beta_c lower than beta, split it
-    bool split(double beta,  vertex_t & vtx, double epsilon);
+    bool split(double &beta,  vertex_t & vtx, double epsilon);
 
     // Merge vertexes closer than declared dimensions
     bool merge(vertex_t & vtx, double d2_merge);
 
-
+    // Plot status of tracks and Vertices
+    void plot_status(double beta, vertex_t &vtx, tracks_t &tks, int n_it = 0, const char* flag ="");
 
   private:
 
