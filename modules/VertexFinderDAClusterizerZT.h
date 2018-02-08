@@ -9,10 +9,10 @@
  *
  */
 
-
 #include "classes/DelphesModule.h"
 
 #include <vector>
+#include <iostream>
 
 class TObjArray;
 class TIterator;
@@ -136,6 +136,7 @@ class VertexFinderDAClusterizerZT: public DelphesModule
           {
             if(szz[k] == 0 || stt[k] == 0)
             {
+              std::cout << std::endl << Form("%d:  t=%1.2e, z=%1.2e, pk=%1.2e, szz=%1.2e, stt=%1.2e, stz=%1.2e", k, t[k], z[k], pk[k], szz[k], stt[k], stz[k]);
               throw std::invalid_argument( "Attempting to compute beta c for uninitialized vertex" );
             }
 
@@ -183,6 +184,9 @@ class VertexFinderDAClusterizerZT: public DelphesModule
     // Merge vertexes closer than declared dimensions
     bool merge(vertex_t & vtx, double d2_merge);
 
+    // Compute all the energies and set the partition function normalization for each track
+    std::vector<double> Compute_exp_betaE(double beta, vertex_t &vtx, tracks_t &tks, double Z_init);
+
     // Plot status of tracks and Vertices
     void plot_status(double beta, vertex_t &vtx, tracks_t &tks, int n_it = 0, const char* flag ="");
 
@@ -218,6 +222,12 @@ class VertexFinderDAClusterizerZT: public DelphesModule
     TObjArray *fVertexOutputArray;
 
     ClassDef(VertexFinderDAClusterizerZT, 1)
+
+    //Used to keep track of number of verices in verbose mode
+    std::vector<double> fEnergy_rec;
+    std::vector<double> fBeta_rec;
+    std::vector<double> fNvtx_rec;
+
 };
 
 #endif
