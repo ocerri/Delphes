@@ -96,7 +96,7 @@ void VertexFinderDAClusterizerZT::Init()
   fD0CutOff        = GetDouble("D0CutOff", 1);  // d0/sigma_d0, used to compute the pi (weight) of the track
   fDtCutOff        = GetDouble("DtCutOff", 160);  // [ps], 3*DtCutOff is hard cut off for tracks
 
-  fD2UpdateLim     = GetDouble("D2UpdateLim", 1.); // ((dz/ZSize)^2+(dt/TSize)^2)/nv limit for merging vertices
+  fD2UpdateLim     = GetDouble("D2UpdateLim", 3.); // ((dz/ZSize)^2+(dt/TSize)^2)/nv limit for merging vertices
   fD2Merge         = GetDouble("D2Merge", 2.0); // (dz/ZSize)^2+(dt/TSize)^2 limit for merging vertices
   fSplittingSize   = GetDouble("SplittingSize", 0.5); // Size of the perturbation when splitting
 
@@ -340,7 +340,7 @@ void VertexFinderDAClusterizerZT::clusterize(TObjArray &clusters)
       niter++;
       if( fVerbose > 10 ) plot_status(beta, vtx, tks, 0, "Bup");
     }
-    while (delta2 > 0.5*fD2UpdateLim &&  niter < fMaxIterations);
+    while (delta2 > 0.3*fD2UpdateLim &&  niter < fMaxIterations);
 
     beta /= fCoolingFactor;
   }
@@ -354,6 +354,7 @@ void VertexFinderDAClusterizerZT::clusterize(TObjArray &clusters)
 
     candidate->ClusterIndex = k;
     candidate->Position.SetXYZT(0.0, 0.0, vtx.z[k] , vtx.t[k]*1E-9*c_light);
+    candidate->SumPt = 0;
 
     clusters.Add(candidate);
   }
@@ -378,7 +379,14 @@ void VertexFinderDAClusterizerZT::clusterize(TObjArray &clusters)
 
     tks.tt[i]->ClusterIndex = k_min;
     ((Candidate *) clusters.At(k_min))->AddCandidate(tks.tt[i]);
+    ((Candidate *) clusters.At(k_min))->SumPt += tks.tt[i]->Momentum.Pt();
   }
+
+  // Remove all the cluster with just one track and assign those at the closet one
+  // CONTINUE FROM HERE
+  // Take alle the cluster with just one track
+  // Startting form the cluster with the smalles sum pt
+  // remove it and assign the track at the closet vertex
 }
 
 //------------------------------------------------------------------------------
@@ -448,10 +456,10 @@ void VertexFinderDAClusterizerZT::fill(tracks_t &tks)
   if(fVerbose > 1)
   {
     cout << "----->Filled tracks" << endl;
-    cout << "M\t\tz\t\tdz\t\tt\t\tdt\t\tw" << endl;
+    cout << "M        z        dz        t        dt        w" << endl;
     for(unsigned int i = 0; i < tks.getSize(); i++)
     {
-      cout << tks.PID[i] << "\t\t" << tks.z[i] << "\t\t" << 1/sqrt(tks.dz2_o[i]) << "\t\t" << tks.t[i] << "\t\t" << 1/sqrt(tks.dt2_o[i]) << "\t\t" << tks.w[i] << endl;
+      cout << Form("%d\t%1.1e\t%1.1e\t%1.1e\t%1.1e\t%1.1e", tks.PID[i], tks.z[i], 1/sqrt(tks.dz2_o[i]), tks.t[i], 1/sqrt(tks.dt2_o[i]), tks.w[i]) << endl;
     }
   }
 
@@ -525,7 +533,7 @@ double VertexFinderDAClusterizerZT::update(double beta, tracks_t &tks, vertex_t 
   double Z_init = rho0 * exp(-beta * fDzCutOff * fDzCutOff); // Add fDtCutOff here toghether  with this
 
   // Compute all the energies (aka distances) and normalization partition function
-  vector<double> exp_betaE = Compute_exp_betaE(beta, vtx, tks, Z_init);
+  vector<double> pk_exp_mBetaE = Compute_pk_exp_mBetaE(beta, vtx, tks, Z_init);
 
   double sum_pk = 0;
   double delta2 = 0; // Sum of vertex displacement in this run
@@ -543,13 +551,16 @@ double VertexFinderDAClusterizerZT::update(double beta, tracks_t &tks, vertex_t 
     {
       unsigned int idx = k*nt + i;
 
-      if(exp_betaE[idx] == 0) continue;
-
-      double p_ygx = vtx.pk[k] * (exp_betaE[idx] / tks.Z[i]);      //p(y|x), Gibbs distribution
-      if(isnan(p_ygx))
+      if(pk_exp_mBetaE[idx] == 0 || tks.Z[i] == 0)
       {
-        cout << Form("%1.2e    %1.2e    %1.2e", vtx.pk[k], exp_betaE[idx], tks.Z[i]);
-        throw std::invalid_argument("p_ygx is nan");
+        continue;
+      }
+
+      double p_ygx = pk_exp_mBetaE[idx] / tks.Z[i];      //p(y|x), Gibbs distribution
+      if(isnan(p_ygx) || isinf(p_ygx) || p_ygx > 1)
+      {
+        cout << Form("%1.6e    %1.6e", pk_exp_mBetaE[idx], tks.Z[i]);
+        throw std::invalid_argument(Form("p_ygx is %.8f", p_ygx));
       }
       // sum_w += tks.w[i];
       pk_new += tks.w[i] * p_ygx;
@@ -567,10 +578,6 @@ double VertexFinderDAClusterizerZT::update(double beta, tracks_t &tks, vertex_t 
       double dz = (tks.z[i] - vtx.z[k]) * tks.dz_o[i];
       double dt = (tks.t[i] - vtx.t[k]) * tks.dt_o[i];
 
-      //DEBUG
-      // cout << Form("{%d,%d}: p_ygx=%1.2f, dz=%1.2f, sig_z=%1.2f", k, i, p_ygx, 1./tks.dz_o[i], dz) << endl;
-      // cout << Form("Beta = %f, Energy = %f", beta, Energy(tks.z[i], vtx.z[k], tks.dz2_o[i], tks.t[i], vtx.t[k], tks.dt2_o[i])) << endl;
-
       szz += p_xgy * dz * dz;
       stt += p_xgy * dt * dt;
       stz += p_xgy * dt * dz;
@@ -584,8 +591,11 @@ double VertexFinderDAClusterizerZT::update(double beta, tracks_t &tks, vertex_t 
 
     double new_t = sw_t/sum_wt;
     double new_z = sw_z/sum_wz;
-    if(isnan(new_z))
+    if(isnan(new_z) || isnan(new_t))
     {
+      cout << endl << endl;
+      cout << Form("t: %.3e   /   %.3e", sw_t, sum_wt) << endl;
+      cout << Form("z: %.3e   /   %.3e", sw_z, sum_wz) << endl;
       cout << "pk " << k << "  " << vtx.pk[k] << endl;
       throw std::invalid_argument("new_z is nan");
     }
@@ -602,7 +612,7 @@ double VertexFinderDAClusterizerZT::update(double beta, tracks_t &tks, vertex_t 
     vtx.stz[k] = stz;
   }
 
-  if(fabs((sum_pk - 1.) > 1E-6))
+  if(fabs((sum_pk - 1.) > 1E-4))
   {
     cout << "sum_pk " << sum_pk << endl;
     for (unsigned int k = 0; k < nv; k++)
@@ -735,12 +745,12 @@ bool VertexFinderDAClusterizerZT::merge(vertex_t & vtx, double d2_merge = 2)
 
 // -----------------------------------------------------------------------------
 // Compute all the energies and set the partition function normalization for each track
-vector<double> VertexFinderDAClusterizerZT::Compute_exp_betaE(double beta, vertex_t &vtx, tracks_t &tks, double Z_init)
+vector<double> VertexFinderDAClusterizerZT::Compute_pk_exp_mBetaE(double beta, vertex_t &vtx, tracks_t &tks, double Z_init)
 {
   unsigned int nt = tks.getSize();
   unsigned int nv = vtx.getSize();
 
-  vector<double> exp_betaE(nt * nv);
+  vector<double> pk_exp_mBetaE(nt * nv);
   for (unsigned int k = 0; k < nv; k++)
   {
     for (unsigned int i = 0; i < nt; i++)
@@ -748,15 +758,15 @@ vector<double> VertexFinderDAClusterizerZT::Compute_exp_betaE(double beta, verte
       if(k == 0) tks.Z[i] = Z_init;
 
       double aux = Energy(tks.z[i], vtx.z[k], tks.dz2_o[i], tks.t[i], vtx.t[k], tks.dt2_o[i]);
-      aux = exp(-beta * aux);
+      aux = vtx.pk[k] * exp(-beta * aux);
       // if(aux < 1E-10) continue;
-      tks.Z[i] += vtx.pk[k] * aux;
+      tks.Z[i] += aux;
 
       unsigned int idx = k*nt + i;
-      exp_betaE[idx] = aux;
+      pk_exp_mBetaE[idx] = aux;
     }
   }
-  return exp_betaE;
+  return pk_exp_mBetaE;
 }
 
 
@@ -771,16 +781,16 @@ void VertexFinderDAClusterizerZT::plot_status(double beta, vertex_t &vtx, tracks
   vector<double> t_PU, dt_PU, z_PU, dz_PU;
 
   double ETot = 0;
-  vector<double> exp_betaE = Compute_exp_betaE(beta, vtx, tks, 0);
+  vector<double> pk_exp_mBetaE = Compute_pk_exp_mBetaE(beta, vtx, tks, 0);
 
   for(unsigned int i = 0; i < tks.getSize(); i++)
   {
     for(unsigned int k = 0; k < vtx.getSize(); k++)
     {
       unsigned int idx = k*tks.getSize() + i;
-      if(exp_betaE[idx] == 0) continue;
+      if(pk_exp_mBetaE[idx] == 0) continue;
 
-      double p_ygx = vtx.pk[k] * (exp_betaE[idx] / tks.Z[i]);
+      double p_ygx = pk_exp_mBetaE[idx] / tks.Z[i];
 
       ETot += tks.w[i] * p_ygx * Energy(tks.z[i], vtx.z[k], tks.dz2_o[i], tks.t[i], vtx.t[k], tks.dt2_o[i]);
     }

@@ -87,6 +87,11 @@ class VertexFinderDAClusterizerZT: public DelphesModule
         double ZSize;
         double TSize;
 
+        // Used in the tracks-cluster assignment
+        double sum_pt;
+        std::vector<unsigned int> i_tracks;
+
+
         vertex_t(){}
         ~vertex_t(){}
 
@@ -185,7 +190,7 @@ class VertexFinderDAClusterizerZT: public DelphesModule
     bool merge(vertex_t & vtx, double d2_merge);
 
     // Compute all the energies and set the partition function normalization for each track
-    std::vector<double> Compute_exp_betaE(double beta, vertex_t &vtx, tracks_t &tks, double Z_init);
+    std::vector<double> Compute_pk_exp_mBetaE(double beta, vertex_t &vtx, tracks_t &tks, double Z_init);
 
     // Plot status of tracks and Vertices
     void plot_status(double beta, vertex_t &vtx, tracks_t &tks, int n_it = 0, const char* flag ="");
