@@ -315,7 +315,7 @@ void VertexFinderDAClusterizerZT::clusterize(TObjArray &clusters)
 
     if( beta < fBetaStop )
     {
-      split(beta, vtx, fSplittingSize);
+      split(beta, vtx, tks, fSplittingSize);
       if( fVerbose > 10 ) plot_status(beta, vtx, tks, 0, "Asp");
     }
     else
@@ -665,7 +665,7 @@ double VertexFinderDAClusterizerZT::update(double beta, tracks_t &tks, vertex_t 
 //------------------------------------------------------------------------------
 // Split critical vertices (beta_c < beta)
 // Returns true if at least one cluster was split
-bool VertexFinderDAClusterizerZT::split(double &beta, vertex_t &vtx, double epsilon)
+bool VertexFinderDAClusterizerZT::split(double &beta, vertex_t &vtx, tracks_t & tks, double epsilon)
 {
   bool split = false;
 
@@ -678,7 +678,7 @@ bool VertexFinderDAClusterizerZT::split(double &beta, vertex_t &vtx, double epsi
   }
   else
   {
-    unsigned int nv = vtx.getSize();
+    const unsigned int nv = vtx.getSize();
     for(unsigned int k = 0; k < nv; k++)
     {
       if( fVerbose > 3 )
@@ -686,44 +686,112 @@ bool VertexFinderDAClusterizerZT::split(double &beta, vertex_t &vtx, double epsi
         cout << "vtx " << k << "  beta_c = " << vtx.beta_c[k] << endl;
       }
       if(vtx.beta_c[k] <= beta)
-      // if(k == pair_bc_k.second)
       {
-        split = true;
-        // Compute splitting direction: given by the max eighenvalue eighenvector
         double z_old = vtx.z[k];
         double t_old = vtx.t[k];
         double pk_old = vtx.pk[k];
 
-        double aux_slope = (vtx.szz[k] - vtx.stt[k])*(vtx.szz[k] - vtx.stt[k]) + 4*vtx.stz[k]*vtx.stz[k];
-        aux_slope = vtx.szz[k] - vtx.stt[k] - sqrt(aux_slope);
-        aux_slope = -2*vtx.stz[k] / aux_slope;
-        // Move the vertex of epsilon
-        double delta = epsilon/sqrt(1+aux_slope*aux_slope); //in the measure sqrt((dz/sz)^2 + (dt/st)^2)
+        // Compute splitting direction: given by the max eighenvalue eighenvector
+        double tn = (vtx.szz[k] - vtx.stt[k])*(vtx.szz[k] - vtx.stt[k]) + 4*vtx.stz[k]*vtx.stz[k];
+        tn = vtx.szz[k] - vtx.stt[k] + sqrt(tn);
+        double zn = -2*vtx.stz[k];
+        double norm = hypot(zn, tn);
+        tn /= norm;
+        zn /= norm;
 
-        if( fVerbose > 3 )
+        // Estimate subcluster positions and weight
+        double p1=0, z1=0, t1=0, wz1=0, wt1=0;
+        double p2=0, z2=0, t2=0, wz2=0, wt2=0;
+        const unsigned int nt = tks.getSize();
+        for(unsigned int i=0; i<nt; ++i)
         {
-          cout << aux_slope << "   delta = " << delta << endl;
+          if (tks.Z[i] > 0)
+          {
+            double lr = (tks.t[i] - vtx.t[k]) * tn + (tks.z[i]-vtx.z[k]) * zn;
+            // winner-takes-all, usually overestimates splitting
+            double tl = lr < 0 ? 1.: 0.;
+            double tr = 1. - tl;
+
+            // soften it, especially at low T
+            double arg = lr * sqrt(beta * ( zn*zn*tks.dz2_o[i] + tn*tn*tks.dt2_o[i] ) );
+            if(abs(arg) < 20)
+            {
+              double t = exp(-arg);
+              tl = t/(t+1.);
+              tr = 1/(t+1.);
+            }
+
+            double p = vtx.pk[k] * tks.w[i];
+            p *= exp(-beta * Energy(tks.z[i], vtx.z[k], tks.dz2_o[i], tks.t[i], vtx.t[k], tks.dt2_o[i])) / tks.Z[i];
+            double wt = p*tks.dt2_o[i];
+            double wz = p*tks.dz2_o[i];
+            p1 += p*tl;  z1 += wz*tl*tks.z[i]; t1 += wt*tl*tks.t[i]; wz1 += wz*tl; wt1 += wt*tl;
+            p2 += p*tr;  z2 += wz*tr*tks.z[i]; t2 += wt*tr*tks.t[i]; wz2 += wz*tr; wt2 += wt*tr;
+          }
         }
 
-        double t_displ = delta * fVertexTSize;
-        double z_displ = aux_slope * delta * fVertexZSize;
-
-        vtx.t[k] = t_old + t_displ;
-        vtx.z[k] = z_old + z_displ;
-        vtx.pk[k] = pk_old/2.;
-
-        double new_t = t_old - t_displ;
-        double new_z = z_old - z_displ;
-        double new_pk = pk_old/2.;
-
-        vtx.addItem(new_z, new_t, new_pk);
-
-        if( fVerbose > 3 )
+        if(wz1 > 0  && wt1 > 0 && wz2 > 0 && wt2 > 0)
         {
-          cout << "===Split happened on vtx " << k << endl;
-          cout << "OLD     z: " << z_old << " , t: " << t_old << " , pk: " << pk_old << endl;
-          cout << "NEW+    z: " << vtx.z[k] << " , t: " << vtx.t[k] << " , pk: " << vtx.pk[k] << endl;
-          cout << "NEW-    z: " << new_z << " , t: " << new_t << " , pk: " << new_pk <<  endl;
+          t1 /= wt1;
+          z1 /= wz1;
+          t2 /= wt2;
+          z2 /= wz2;
+
+          if( fVerbose > 3 )
+          {
+            double aux = (z1-z2)*(z1-z2)/(fVertexZSize*fVertexZSize) + (t1-t2)*(t1-t2)/(fVertexTSize*fVertexTSize);
+            cout << "weighted split:  delta = " << sqrt(aux) << endl;
+          }
+        }
+        else
+        {
+          double aux_slope = zn/tn;
+          double delta = epsilon/sqrt(1+aux_slope*aux_slope); //in the measure sqrt((dz/sz)^2 + (dt/st)^2)
+
+          if( fVerbose > 3 )
+          {
+            cout << aux_slope << "   delta = " << delta << endl;
+          }
+
+          double t_displ = delta * fVertexTSize;
+          double z_displ = aux_slope * delta * fVertexZSize;
+
+          t1 = t_old + t_displ;
+          z1 = z_old + z_displ;
+          t2 = t_old - t_displ;
+          z2 = z_old - z_displ;
+        }
+
+        while(vtx.NearestCluster(t1, z1) != k || vtx.NearestCluster(t2, z2) != k)
+        {
+          t1 = 0.5 * (t1 + t_old);
+          z1 = 0.5 * (z1 + z_old);
+          t2 = 0.5 * (t2 + t_old);
+          z2 = 0.5 * (z2 + z_old);
+        }
+
+        // Compute final distance and split if the distance is enough
+        double delta2 = (z1-z2)*(z1-z2)/(fVertexZSize*fVertexZSize) + (t1-t2)*(t1-t2)/(fVertexTSize*fVertexTSize);
+        if(delta2 > 0.5*fD2Merge);
+        {
+          split = true;
+          vtx.t[k] = t1;
+          vtx.z[k] = z1;
+          vtx.pk[k] = p1 * vtx.pk[k]/(p1+p2);
+
+          double new_t = t2;
+          double new_z = z2;
+          double new_pk = p2 * vtx.pk[k]/(p1+p2);
+
+          vtx.addItem(new_z, new_t, new_pk);
+
+          if( fVerbose > 3 )
+          {
+            cout << "===Split happened on vtx " << k << endl;
+            cout << "OLD     z: " << z_old << " , t: " << t_old << " , pk: " << pk_old << endl;
+            cout << "NEW+    z: " << vtx.z[k] << " , t: " << vtx.t[k] << " , pk: " << vtx.pk[k] << endl;
+            cout << "NEW-    z: " << new_z << " , t: " << new_t << " , pk: " << new_pk <<  endl;
+          }
         }
       }
     }

@@ -132,6 +132,26 @@ class VertexFinderDAClusterizerZT: public DelphesModule
           return dz*dz + dt*dt;
         }
 
+        unsigned int NearestCluster(double t_, double z_)
+        {
+          unsigned int k_min = 0;
+          double d2_min = 0;
+
+          for(unsigned int k = 0; k < getSize(); k++)
+          {
+            double dt = (t[k] - t_)/TSize;
+            double dz = (z[k] - z_)/ZSize;
+            double d2 = dt*dt + dz*dz;
+            if(k == 0 || d2 < d2_min)
+            {
+              k_min = k;
+              d2_min = d2;
+            }
+          }
+
+          return k_min;
+        }
+
         std::pair<double, unsigned int> ComputeAllBeta_c()
         {
           unsigned int nv = getSize();
@@ -184,7 +204,7 @@ class VertexFinderDAClusterizerZT: public DelphesModule
     double update(double beta, tracks_t &tks, vertex_t &vtx, double rho0);
 
     // If a vertex has beta_c lower than beta, split it
-    bool split(double &beta,  vertex_t & vtx, double epsilon);
+    bool split(double &beta,  vertex_t & vtx, tracks_t & tks, double epsilon);
 
     // Merge vertexes closer than declared dimensions
     bool merge(vertex_t & vtx, double d2_merge);
