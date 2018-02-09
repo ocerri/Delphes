@@ -63,6 +63,7 @@ VertexFinderDAClusterizerZT::VertexFinderDAClusterizerZT()
   fDtCutOff = 0;
   fD2Merge = 0;
   fSplittingSize = 0;
+  fMuOutlayer = 0;
 }
 
 //------------------------------------------------------------------------------
@@ -90,15 +91,14 @@ void VertexFinderDAClusterizerZT::Init()
 
   fCoolingFactor   = GetDouble("CoolingFactor", 0.8); // Multiply T so to cooldown must be <1
 
-  // !!FIX defaul values
-  // DzCutOff also used as initializer to Z_init to do outlayers, as D0CutOff must be O(1) and find anew way to the flowwing line meaning (add new var)
-  fDzCutOff        = GetDouble("DzCutOff", 40);  // For the moment 3*DzCutOff is hard cut off for the considered tracks
-  fD0CutOff        = GetDouble("D0CutOff", 1);  // d0/sigma_d0, used to compute the pi (weight) of the track
-  fDtCutOff        = GetDouble("DtCutOff", 160);  // [ps], 3*DtCutOff is hard cut off for tracks
+  fDzCutOff        = GetDouble("DzCutOff", 40);      // For the moment 3*DzCutOff is hard cut off for the considered tracks
+  fD0CutOff        = GetDouble("D0CutOff", 1);       // d0/sigma_d0, used to compute the pi (weight) of the track
+  fDtCutOff        = GetDouble("DtCutOff", 160);     // [ps], 3*DtCutOff is hard cut off for tracks
 
-  fD2UpdateLim     = GetDouble("D2UpdateLim", 3.); // ((dz/ZSize)^2+(dt/TSize)^2)/nv limit for merging vertices
-  fD2Merge         = GetDouble("D2Merge", 2.0); // (dz/ZSize)^2+(dt/TSize)^2 limit for merging vertices
-  fSplittingSize   = GetDouble("SplittingSize", 0.5); // Size of the perturbation when splitting
+  fD2UpdateLim     = GetDouble("D2UpdateLim", 3.);   // ((dz/ZSize)^2+(dt/TSize)^2)/nv limit for merging vertices
+  fD2Merge         = GetDouble("D2Merge", 8.0);      // (dz/ZSize)^2+(dt/TSize)^2 limit for merging vertices
+  fSplittingSize   = GetDouble("SplittingSize", 10); // Size of the perturbation when splitting
+  fMuOutlayer      = GetDouble("MuOutlayer", 4);     // Outlayer rejection exponent
 
 
   fInputArray = ImportArray(GetString("InputArray", "TrackSmearing/tracks"));
@@ -248,15 +248,14 @@ void VertexFinderDAClusterizerZT::clusterize(TObjArray &clusters)
 {
   tracks_t tks;
   fill(tks);
+  unsigned int nt=tks.getSize();
   if(fVerbose)
   {
-    cout << "Tracks added: " << tks.getSize() << endl;
+    cout << "Tracks added: " << nt << endl;
   }
-
-  unsigned int nt=tks.getSize();
-  double rho0=0.0;  // start with no outlier rejection
-
   if (nt == 0) return;
+
+
 
   vertex_t vtx; // the vertex prototypes
   vtx.ZSize = fVertexZSize;
@@ -275,11 +274,11 @@ void VertexFinderDAClusterizerZT::clusterize(TObjArray &clusters)
 
   if( fVerbose > 10 ) plot_status(beta, vtx, tks, 0, "Ast");
 
-  if( fVerbose > 2)
-  {
-    cout << "Cool down untill reaching the temperature to finish increasing the number of vertexes" << endl;
-  }
-  while(beta < fBetaPurge)
+  if( fVerbose > 2){cout << "Cool down untill reaching the temperature to finish increasing the number of vertexes" << endl;}
+
+  double rho0=0.0;  // start with no outlier rejection
+  unsigned int last_round = 0;
+  while(last_round < 2)
   {
 
     unsigned int niter=0;
@@ -314,10 +313,15 @@ void VertexFinderDAClusterizerZT::clusterize(TObjArray &clusters)
 
     beta /= fCoolingFactor;
 
-    if(beta < fBetaStop && vtx.getSize() < min(fMaxVertexNumber, tks.getSize()))
+    if( beta < fBetaStop )
     {
       split(beta, vtx, fSplittingSize);
       if( fVerbose > 10 ) plot_status(beta, vtx, tks, 0, "Asp");
+    }
+    else
+    {
+      beta = fBetaStop;
+      last_round++;
     }
 
     if(fVerbose > 3)
@@ -327,10 +331,23 @@ void VertexFinderDAClusterizerZT::clusterize(TObjArray &clusters)
     }
   }
 
-  if(fVerbose > 2)
+  if(fVerbose > 2)  {cout << "Adiabatic switch on of outlayr rejection" << endl;}
+  rho0 = 1./nt;
+  const double N_cycles = 10;
+  for(unsigned int f = 1; f <= N_cycles; f++)
   {
-    cout << "Cooldown untill the limit before assigning track to vertices" << endl;
+    unsigned int niter=0;
+    double delta2 = 0;
+    do  {
+      delta2 = update(beta, tks, vtx, rho0 * f/N_cycles);
+      niter++;
+    }
+    while (delta2 > 0.3*fD2UpdateLim &&  niter < fMaxIterations);
+    if( fVerbose > 10 ) plot_status(beta, vtx, tks, f, "Dadout");
   }
+
+
+  if(fVerbose > 2){cout << "Cooldown untill the limit before assigning track to vertices" << endl;}
   while(beta < fBetaMax)
   {
     unsigned int niter=0;
@@ -530,7 +547,7 @@ double VertexFinderDAClusterizerZT::update(double beta, tracks_t &tks, vertex_t 
   unsigned int nv = vtx.getSize();
 
   //initialize sums
-  double Z_init = rho0 * exp(-beta * fDzCutOff * fDzCutOff); // Add fDtCutOff here toghether  with this
+  double Z_init = rho0 * exp(-beta * fMuOutlayer * fMuOutlayer); // Add fDtCutOff here toghether  with this
 
   // Compute all the energies (aka distances) and normalization partition function
   vector<double> pk_exp_mBetaE = Compute_pk_exp_mBetaE(beta, vtx, tks, Z_init);
@@ -681,8 +698,7 @@ bool VertexFinderDAClusterizerZT::split(double &beta, vertex_t &vtx, double epsi
         aux_slope = vtx.szz[k] - vtx.stt[k] - sqrt(aux_slope);
         aux_slope = -2*vtx.stz[k] / aux_slope;
         // Move the vertex of epsilon
-        epsilon /= TMath::Max(1., double(floor(beta)));
-        double delta = 0.5*(vtx.szz[k] + vtx.stt[k])*epsilon/sqrt(1+aux_slope*aux_slope);
+        double delta = epsilon/sqrt(1+aux_slope*aux_slope); //in the measure sqrt((dz/sz)^2 + (dt/st)^2)
 
         if( fVerbose > 3 )
         {
@@ -776,6 +792,81 @@ vector<double> VertexFinderDAClusterizerZT::Compute_pk_exp_mBetaE(double beta, v
   }
   return pk_exp_mBetaE;
 }
+
+//------------------------------------------------------------------------------
+// Eliminate clusters with only one significant/unique track
+// bool VertexFinderDAClusterizerZT::purge(vertex_t & vtx, track_t & tks, double & rho0, const double beta)
+// {
+//   constexpr double eps = 1.e-100;
+//   const unsigned int nv = vtx.getSize();
+//   const unsigned int nt = tks.getSize();
+//
+//   if (nv < 2)
+//     return false;
+//
+//   double sumpmin = nt;
+//   unsigned int k0 = nv;
+//
+//   int nUnique = 0;
+//   double sump = 0;
+//
+//   std::vector<double> inverse_zsums(nt), arg_cache(nt), eik_cache(nt);
+//   double * pinverse_zsums;
+//   double * parg_cache;
+//   double * peik_cache;
+//   pinverse_zsums = inverse_zsums.data();
+//   parg_cache = arg_cache.data();
+//   peik_cache = eik_cache.data();
+//   for(unsigned i = 0; i < nt; ++i) {
+//     inverse_zsums[i] = tks.Z_sum_[i] > eps ? 1./tks.Z_sum_[i] : 0.0;
+//   }
+//
+//   for (unsigned int k = 0; k < nv; ++k) {
+//
+//     nUnique = 0;
+//     sump = 0;
+//
+//     const double pmax = vtx.pk_[k] / (vtx.pk_[k] + rho0 * local_exp(-beta * dzCutOff_* dzCutOff_));
+//     const double pcut = uniquetrkweight_ * pmax;
+//     for(unsigned i = 0; i < nt; ++i) {
+//       const auto track_z = tks.z_[i];
+//       const auto track_t = tks.t_[i];
+//       const auto botrack_dz2 = -beta*tks.dz2_[i];
+//       const auto botrack_dt2 = -beta*tks.dt2_[i];
+//
+//       const auto mult_resz = track_z - vtx.z_[k];
+//       const auto mult_rest = track_t - vtx.t_[k];
+//       parg_cache[i] = botrack_dz2 * ( mult_resz * mult_resz ) + botrack_dt2 * ( mult_rest * mult_rest );
+//     }
+//     local_exp_list(parg_cache, peik_cache, nt);
+//     for (unsigned int i = 0; i < nt; ++i) {
+//       const double p = vtx.pk_[k] * peik_cache[i] * pinverse_zsums[i];
+//       sump += p;
+//       nUnique += ( ( p > pcut ) & ( tks.pi_[i] > 0 ) );
+//     }
+//
+//     if ((nUnique < 2) && (sump < sumpmin)) {
+//       sumpmin = sump;
+//       k0 = k;
+//     }
+//
+//   }
+//
+//   if (k0 != nv) {
+//     #ifdef VI_DEBUG
+//         if (verbose_) {
+//           std::cout  << "eliminating prototvtxpe at " << std::setw(10) << std::setprecision(4) << vtx.z_[k0] << "," << vtx.t_[k0]
+//     		 << " with sump=" << sumpmin
+//     		 << "  rho*nt =" << vtx.pk_[k0]*nt
+//     		 << endl;
+//         }
+//     #endif
+//     vtx.removeItem(k0);
+//     return true;
+//   } else {
+//     return false;
+//   }
+// }
 
 
 // -----------------------------------------------------------------------------

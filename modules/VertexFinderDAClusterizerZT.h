@@ -34,7 +34,7 @@ class VertexFinderDAClusterizerZT: public DelphesModule
         std::vector<double> dt_o;
 
         std::vector<Candidate*> tt; // a pointer to the Candidate Track
-        std::vector<double> Z;      // Z[i] for DA clustering
+        std::vector<double> Z;      // Normalization of P(y|x) = p_k * exp(-beta*E_ik)/Z_i
 
         std::vector<double> w;     // track weight
 
@@ -219,6 +219,7 @@ class VertexFinderDAClusterizerZT: public DelphesModule
     Double_t fD2UpdateLim;
     Double_t fD2Merge;
     Double_t fSplittingSize;
+    Double_t fMuOutlayer;
 
     TObjArray *fInputArray;
     TIterator *fItInputArray;
