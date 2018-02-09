@@ -544,8 +544,9 @@ double VertexFinderDAClusterizerZT::update(double beta, tracks_t &tks, vertex_t 
     double sw_z = 0, sw_t = 0;
     // Compute the posterior covariance matrix Elements
     double szz = 0, stt = 0, stz = 0;
-    // double sum_w = 0;
     double sum_wt = 0, sum_wz = 0;
+    double sum_ptt = 0, sum_pzz = 0, sum_ptz = 0;
+
 
     for (unsigned int i = 0; i < nt; i++)
     {
@@ -562,7 +563,6 @@ double VertexFinderDAClusterizerZT::update(double beta, tracks_t &tks, vertex_t 
         cout << Form("%1.6e    %1.6e", pk_exp_mBetaE[idx], tks.Z[i]);
         throw std::invalid_argument(Form("p_ygx is %.8f", p_ygx));
       }
-      // sum_w += tks.w[i];
       pk_new += tks.w[i] * p_ygx;
 
       double wt = tks.w[i] * p_ygx * tks.dt2_o[i];
@@ -575,19 +575,27 @@ double VertexFinderDAClusterizerZT::update(double beta, tracks_t &tks, vertex_t 
 
       // Add the track contribution to the covariance matrix
       double p_xgy = p_ygx * tks.w[i] / vtx.pk[k];
-      double dz = (tks.z[i] - vtx.z[k]) * tks.dz_o[i];
       double dt = (tks.t[i] - vtx.t[k]) * tks.dt_o[i];
+      double dz = (tks.z[i] - vtx.z[k]) * tks.dz_o[i];
 
-      szz += p_xgy * dz * dz;
-      stt += p_xgy * dt * dt;
-      stz += p_xgy * dt * dz;
+      double wtt = p_xgy * tks.dt2_o[i];
+      double wzz = p_xgy * tks.dz2_o[i];
+      double wtz = p_xgy * tks.dt_o[i] * tks.dz_o[i];
+
+      stt += wtt * dt * dt;
+      szz += wzz * dz * dz;
+      stz += wtz * dt * dz;
+
+      sum_ptt += wtt;
+      sum_pzz += wzz;
+      sum_ptz += wtz;
     }
     pk_new /= tks.sum_w;
     sum_pk += pk_new;
 
-    stt /= tks.sum_w;
-    szz /= tks.sum_w;
-    stz /= tks.sum_w;
+    stt /= sum_ptt;
+    szz /= sum_pzz;
+    stz /= sum_ptz;
 
     double new_t = sw_t/sum_wt;
     double new_z = sw_z/sum_wz;
@@ -859,3 +867,7 @@ void VertexFinderDAClusterizerZT::plot_status(double beta, vertex_t &vtx, tracks
 
   delete c_2Dspace;
 }
+
+
+// -----------------------------------------------------------------------------
+// Vertex Fitting
