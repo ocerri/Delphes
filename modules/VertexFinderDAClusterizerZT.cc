@@ -33,6 +33,7 @@
 #include "TString.h"
 #include "TLegend.h"
 #include "TFile.h"
+#include "TColor.h"
 #include "TLegend.h"
 
 #include <utility>
@@ -64,6 +65,7 @@ VertexFinderDAClusterizerZT::VertexFinderDAClusterizerZT()
   fD2Merge = 0;
   fSplittingSize = 0;
   fMuOutlayer = 0;
+  fMinTrackProb = 0;
 }
 
 //------------------------------------------------------------------------------
@@ -99,6 +101,7 @@ void VertexFinderDAClusterizerZT::Init()
   fD2Merge         = GetDouble("D2Merge", 8.0);      // (dz/ZSize)^2+(dt/TSize)^2 limit for merging vertices
   fSplittingSize   = GetDouble("SplittingSize", 10); // Size of the perturbation when splitting
   fMuOutlayer      = GetDouble("MuOutlayer", 4);     // Outlayer rejection exponent
+  fMinTrackProb    = GetDouble("fMinTrackProb", 0.5);     // Outlayer rejection exponent
 
 
   fInputArray = ImportArray(GetString("InputArray", "TrackSmearing/tracks"));
@@ -239,7 +242,6 @@ void VertexFinderDAClusterizerZT::Process()
    }// end of cluster loop
 
   delete ClusterArray;
-
 }
 
 //------------------------------------------------------------------------------
@@ -402,7 +404,7 @@ void VertexFinderDAClusterizerZT::clusterize(TObjArray &clusters)
     beta /= fCoolingFactor;
     if(beta > fBetaPurge) beta = fBetaPurge;
     unsigned int i_pu = 0;
-    while( purge(vtx, tks, rho0, beta) )
+    while( purge(vtx, tks, rho0, beta, fMinTrackProb) )
     {
       unsigned int niter=0;
       double delta2 = 0;
@@ -413,6 +415,21 @@ void VertexFinderDAClusterizerZT::clusterize(TObjArray &clusters)
       while (delta2 > fD2UpdateLim &&  niter < fMaxIterations);
       if( fVerbose > 10 ) plot_status(beta, vtx, tks, i_pu, "Eprg");
       i_pu++;
+    }
+
+    unsigned int n_it = 0;
+    while(merge(vtx, fD2Merge) && n_it < fMaxIterations)
+    {
+      unsigned int niter=0;
+      double delta2 = 0;
+      do  {
+        delta2 = update(beta, tks, vtx, rho0);
+        niter++;
+      }
+      while (delta2 > fD2UpdateLim &&  niter < fMaxIterations);
+      n_it++;
+
+      if( fVerbose > 10 ) plot_status(beta, vtx, tks, n_it, "Cme");
     }
   } while( beta < fBetaPurge );
 
@@ -453,27 +470,49 @@ void VertexFinderDAClusterizerZT::clusterize(TObjArray &clusters)
   }
 
 
-  // Assign each track to the closest vertex
+  // Assign each track to the most probable vertex
+  double Z_init = rho0 * exp(-beta * fMuOutlayer * fMuOutlayer); // Add fDtCutOff here toghether  with this
+  vector<double> pk_exp_mBetaE = Compute_pk_exp_mBetaE(beta, vtx, tks, Z_init);
+
   for(unsigned int i = 0; i< tks.getSize(); i++)
   {
-    double d2_min = 0;
-    unsigned int k_min;
+    if(tks.w[i] <= 0) continue;
+
+    double p_max = 0;
+    unsigned int k_max = 0;
 
     for(unsigned int k = 0; k < vtx.getSize(); k++)
     {
-      double d2 = Energy(tks.z[i], vtx.z[k], tks.dz2_o[i], tks.t[i], vtx.t[k], tks.dt2_o[i]);
-
-      if (k == 0 || d2 < d2_min)
+      unsigned int idx = k*nt + i;
+      if(pk_exp_mBetaE[idx] == 0 || tks.Z[i] == 0 || vtx.pk[k] == 0)
       {
-        d2_min = d2;
-        k_min = k;
+        continue;
+      }
+
+      double pv_max = vtx.pk[k] / (vtx.pk[k] + rho0 * exp(-beta * fMuOutlayer* fMuOutlayer));
+      double p = pk_exp_mBetaE[idx] / tks.Z[i];
+      p /= pv_max;
+
+      if(p > p_max)
+      {
+        p_max = p;
+        k_max = k;
       }
     }
 
-    tks.tt[i]->ClusterIndex = k_min;
-    ((Candidate *) clusters.At(k_min))->AddCandidate(tks.tt[i]);
-    ((Candidate *) clusters.At(k_min))->SumPt += tks.tt[i]->Momentum.Pt();
+    if(p_max > fMinTrackProb)
+    {
+      tks.tt[i]->ClusterIndex = k_max;
+      ((Candidate *) clusters.At(k_max))->AddCandidate(tks.tt[i]);
+      ((Candidate *) clusters.At(k_max))->SumPt += tks.tt[i]->Momentum.Pt();
+    }
+    else
+    {
+      tks.tt[i]->ClusterIndex = -1;
+    }
   }
+
+  if(fVerbose > 10) plot_status_end(vtx, tks);
 
 }
 
@@ -984,7 +1023,7 @@ bool VertexFinderDAClusterizerZT::purge(vertex_t & vtx, tracks_t & tks, double &
 
   if (k0 != nv) {
     if (fVerbose > 5) {
-      std::cout  << "eliminating prototvtxpe at " << std::setw(10) << std::setprecision(4) << vtx.z[k0] << "," << vtx.t[k0]
+      std::cout  << "eliminating prototype at " << std::setw(10) << std::setprecision(4) << vtx.z[k0] << "," << vtx.t[k0]
 		 << " with sump=" << sumpmin
 		 << "  rho*nt =" << vtx.pk[k0]*nt
 		 << endl;
@@ -1087,6 +1126,77 @@ void VertexFinderDAClusterizerZT::plot_status(double beta, vertex_t &vtx, tracks
   delete c_2Dspace;
 }
 
-
 // -----------------------------------------------------------------------------
-// Vertex Fitting
+// Plot status at the end
+void VertexFinderDAClusterizerZT::plot_status_end(vertex_t &vtx, tracks_t &tks)
+{
+  unsigned int nv = vtx.getSize();
+
+  // Define colors in a meaningfull way
+  vector<int> MyPalette(nv);
+
+  const int Number = 3;
+  double Red[Number]    = { 1.00, 0.00, 0.00};
+  double Green[Number]  = { 0.00, 1.00, 0.00};
+  double Blue[Number]   = { 0.00, 0.00, 1.00};
+  double Length[Number] = { 0.90, 0.50, 0.90 };
+  int FI = TColor::CreateGradientColorTable(Number,Length,Red,Green,Blue,nv);
+  for (unsigned int i=0;i<nv;i++) MyPalette[i] = FI+i;
+
+  TCanvas * c_out = new TCanvas("c_out", "c_out", 800, 600);
+  double t_min = TMath::Min( TMath::MinElement(tks.getSize(), &tks.t[0]), TMath::MinElement(vtx.getSize(), &(vtx.t[0]))  ) - 2*fVertexTSize;
+  double t_max = TMath::Max(TMath::MaxElement(tks.getSize(), &tks.t[0]), TMath::MaxElement(vtx.getSize(), &(vtx.t[0]))  ) + 2*fVertexTSize;
+
+  double z_min = TMath::Min( TMath::MinElement(tks.getSize(), &tks.z[0]), TMath::MinElement(vtx.getSize(), &(vtx.z[0]))  ) - 15;
+  double z_max = TMath::Max( TMath::MaxElement(tks.getSize(), &tks.z[0]), TMath::MaxElement(vtx.getSize(), &(vtx.z[0]))  ) + 15;
+
+  // Draw tracks
+  for(unsigned int i = 0; i < tks.getSize(); i++)
+  {
+    double dt[] = {1./tks.dt_o[i]};
+    double dz[] = {1./tks.dz_o[i]};
+    TGraphErrors* gr = new TGraphErrors(1, &(tks.t[i]), &(tks.z[i]), dt, dz);
+
+    gr->SetNameTitle(Form("gr%d",i), Form("gr%d",i));
+
+    int marker = tks.tt[i]->IsPU? 1 : 4;
+    gr->SetMarkerStyle(marker);
+
+    int idx = tks.tt[i]->ClusterIndex;
+    int color = idx>0 ? MyPalette[idx] : 16;
+    gr->SetMarkerColor(color);
+    gr->SetLineColor(color);
+
+    int line_style = idx>0 ? 1 : 3;
+    gr->SetLineStyle(line_style);
+
+    if(i==1)
+    {
+      gr->SetTitle(Form("Clustering space - Tot Vertexes = %d", nv));
+      gr->GetXaxis()->SetTitle("t CA [ps]");
+      gr->GetXaxis()->SetLimits(t_min, t_max);
+      gr->GetYaxis()->SetTitle("z CA [mm]");
+      gr->GetYaxis()->SetRangeUser(z_min, z_max);
+      gr->Draw("APE1");
+    }
+    else gr->Draw("PE1");
+  }
+
+  // Draw vertices
+  for(unsigned int k = 0; k < vtx.getSize(); k++)
+  {
+    TGraph* gr = new TGraph(1, &(vtx.t[k]), &(vtx.z[k]));
+
+    gr->SetNameTitle(Form("grv%d",k), Form("grv%d",k));
+
+    gr->SetMarkerStyle(41);
+    gr->SetMarkerSize(2);
+    gr->SetMarkerColor(MyPalette[k]);
+
+    gr->Draw("P");
+  }
+
+  c_out->SetGrid();
+  c_out->SaveAs(Form("~/Desktop/debug/c_final.png"));
+  delete c_out;
+}

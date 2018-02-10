@@ -222,13 +222,16 @@ class VertexFinderDAClusterizerZT: public DelphesModule
     bool merge(vertex_t & vtx, double d2_merge);
 
     // Eliminate clusters with only one significant/unique track
-    bool purge(vertex_t & vtx, tracks_t & tks, double & rho0, const double beta, double min_prob = 0.5);
+    bool purge(vertex_t & vtx, tracks_t & tks, double & rho0, const double beta, double min_prob);
 
     // Compute all the energies and set the partition function normalization for each track
     std::vector<double> Compute_pk_exp_mBetaE(double beta, vertex_t &vtx, tracks_t &tks, double Z_init);
 
     // Plot status of tracks and Vertices
     void plot_status(double beta, vertex_t &vtx, tracks_t &tks, int n_it = 0, const char* flag ="");
+
+    // Plot status at the end of the fitting
+    void plot_status_end(vertex_t &vtx, tracks_t &tks);
 
   private:
 
@@ -255,6 +258,7 @@ class VertexFinderDAClusterizerZT: public DelphesModule
     Double_t fD2Merge;
     Double_t fSplittingSize;
     Double_t fMuOutlayer;
+    Double_t fMinTrackProb;
 
     TObjArray *fInputArray;
     TIterator *fItInputArray;
