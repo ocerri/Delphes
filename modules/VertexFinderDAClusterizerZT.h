@@ -119,6 +119,18 @@ class VertexFinderDAClusterizerZT: public DelphesModule
           beta_c.erase(beta_c.begin() + i);
         }
 
+        void mergeItems(unsigned int k1, unsigned int k2)
+        {
+          double new_pk = pk[k1] + pk[k2];
+          double new_z = (z[k1]*pk[k1] + z[k2]*pk[k2])/new_pk;
+          double new_t = (t[k1]*pk[k1] + t[k2]*pk[k2])/new_pk;
+
+          removeItem(k2);
+          z[k1] = new_z;
+          t[k1] = new_t;
+          pk[k1] = new_pk;
+        }
+
         unsigned int getSize() const
         {
           return z.size();
@@ -208,6 +220,9 @@ class VertexFinderDAClusterizerZT: public DelphesModule
 
     // Merge vertexes closer than declared dimensions
     bool merge(vertex_t & vtx, double d2_merge);
+
+    // Eliminate clusters with only one significant/unique track
+    bool purge(vertex_t & vtx, tracks_t & tks, double & rho0, const double beta, double min_prob = 0.5);
 
     // Compute all the energies and set the partition function normalization for each track
     std::vector<double> Compute_pk_exp_mBetaE(double beta, vertex_t &vtx, tracks_t &tks, double Z_init);

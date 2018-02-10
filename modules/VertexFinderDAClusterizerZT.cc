@@ -86,8 +86,8 @@ void VertexFinderDAClusterizerZT::Init()
   fBetaPurge       = GetDouble("BetaPurge", 0.5);
   fBetaStop        = GetDouble("BetaStop", 0.2);
 
-  fVertexZSize     = GetDouble("VertexZSize", 0.05); //in mm
-  fVertexTSize     = 1E12*GetDouble("VertexTimeSize", 10E-12); //Convert from [s] to [ps]
+  fVertexZSize     = GetDouble("VertexZSize", 0.1); //in mm
+  fVertexTSize     = 1E12*GetDouble("VertexTimeSize", 20E-12); //Convert from [s] to [ps]
 
   fCoolingFactor   = GetDouble("CoolingFactor", 0.8); // Multiply T so to cooldown must be <1
 
@@ -95,7 +95,7 @@ void VertexFinderDAClusterizerZT::Init()
   fD0CutOff        = GetDouble("D0CutOff", 1);       // d0/sigma_d0, used to compute the pi (weight) of the track
   fDtCutOff        = GetDouble("DtCutOff", 160);     // [ps], 3*DtCutOff is hard cut off for tracks
 
-  fD2UpdateLim     = GetDouble("D2UpdateLim", 3.);   // ((dz/ZSize)^2+(dt/TSize)^2)/nv limit for merging vertices
+  fD2UpdateLim     = GetDouble("D2UpdateLim", 2.);   // ((dz/ZSize)^2+(dt/TSize)^2)/nv limit for merging vertices
   fD2Merge         = GetDouble("D2Merge", 8.0);      // (dz/ZSize)^2+(dt/TSize)^2 limit for merging vertices
   fSplittingSize   = GetDouble("SplittingSize", 10); // Size of the perturbation when splitting
   fMuOutlayer      = GetDouble("MuOutlayer", 4);     // Outlayer rejection exponent
@@ -277,6 +277,50 @@ void VertexFinderDAClusterizerZT::clusterize(TObjArray &clusters)
   if( fVerbose > 2){cout << "Cool down untill reaching the temperature to finish increasing the number of vertexes" << endl;}
 
   double rho0=0.0;  // start with no outlier rejection
+  // while(beta < fBetaStop)
+  // {
+  //   beta /= fCoolingFactor;
+  //   if(beta > fBetaStop) beta = fBetaStop;
+  //
+  //   unsigned int i_sp = 0;
+  //   while(split(beta, vtx, tks, fSplittingSize) && i_sp < fMaxIterations)
+  //   {
+  //     if( fVerbose > 10 ) plot_status(beta, vtx, tks, i_sp, "Asp");
+  //     unsigned int niter=0;
+  //     double delta2 = 0;
+  //     do  {
+  //       delta2 = update(beta, tks, vtx, rho0);
+  //
+  //       if( fVerbose > 10 ) plot_status(beta, vtx, tks, niter+ i_sp*fMaxIterations, "Bup");
+  //       if (fVerbose > 3)
+  //       {
+  //         cout << niter << ": " << delta2 << endl;
+  //       }
+  //       niter++;
+  //     }
+  //     while (delta2 > fD2UpdateLim &&  niter < fMaxIterations);
+  //
+  //     unsigned int n_it = 0;
+  //     while(merge(vtx, fD2Merge) && n_it < fMaxIterations)
+  //     {
+  //       unsigned int niter=0;
+  //       double delta2 = 0;
+  //       do  {
+  //         delta2 = update(beta, tks, vtx, rho0);
+  //         niter++;
+  //       }
+  //       while (delta2 > fD2UpdateLim &&  niter < fMaxIterations);
+  //       n_it++;
+  //
+  //       if( fVerbose > 10 ) plot_status(beta, vtx, tks, n_it, "Cme");
+  //     }
+  //
+  //     i_sp++;
+  //   }
+  //
+  //
+  // }
+
   unsigned int last_round = 0;
   while(last_round < 2)
   {
@@ -331,6 +375,14 @@ void VertexFinderDAClusterizerZT::clusterize(TObjArray &clusters)
     }
   }
 
+  if( fVerbose > 4)
+  {
+    for(unsigned int k = 0; k < vtx.getSize(); k++)
+    {
+      cout << Form("Vertex %d next beta_c = %.3f", k, vtx.beta_c[k]) << endl;
+    }
+  }
+
   if(fVerbose > 2)  {cout << "Adiabatic switch on of outlayr rejection" << endl;}
   rho0 = 1./nt;
   const double N_cycles = 10;
@@ -346,9 +398,28 @@ void VertexFinderDAClusterizerZT::clusterize(TObjArray &clusters)
     if( fVerbose > 10 ) plot_status(beta, vtx, tks, f, "Dadout");
   }
 
+  do {
+    beta /= fCoolingFactor;
+    if(beta > fBetaPurge) beta = fBetaPurge;
+    unsigned int i_pu = 0;
+    while( purge(vtx, tks, rho0, beta) )
+    {
+      unsigned int niter=0;
+      double delta2 = 0;
+      do  {
+        delta2 = update(beta, tks, vtx, rho0);
+        niter++;
+      }
+      while (delta2 > fD2UpdateLim &&  niter < fMaxIterations);
+      if( fVerbose > 10 ) plot_status(beta, vtx, tks, i_pu, "Eprg");
+      i_pu++;
+    }
+  } while( beta < fBetaPurge );
+
 
   if(fVerbose > 2){cout << "Cooldown untill the limit before assigning track to vertices" << endl;}
-  while(beta < fBetaMax)
+  last_round = 0;
+  while(last_round < 2)
   {
     unsigned int niter=0;
     double delta2 = 0;
@@ -360,6 +431,11 @@ void VertexFinderDAClusterizerZT::clusterize(TObjArray &clusters)
     while (delta2 > 0.3*fD2UpdateLim &&  niter < fMaxIterations);
 
     beta /= fCoolingFactor;
+    if ( beta >= fBetaMax )
+    {
+      beta = fBetaMax;
+      last_round++;
+    }
   }
 
 
@@ -399,11 +475,6 @@ void VertexFinderDAClusterizerZT::clusterize(TObjArray &clusters)
     ((Candidate *) clusters.At(k_min))->SumPt += tks.tt[i]->Momentum.Pt();
   }
 
-  // Remove all the cluster with just one track and assign those at the closet one
-  // CONTINUE FROM HERE
-  // Take alle the cluster with just one track
-  // Startting form the cluster with the smalles sum pt
-  // remove it and assign the track at the closet vertex
 }
 
 //------------------------------------------------------------------------------
@@ -646,18 +717,18 @@ double VertexFinderDAClusterizerZT::update(double beta, tracks_t &tks, vertex_t 
     }
     throw std::invalid_argument("Sum of masses not unitary");
   }
-  if(fVerbose > 3)
-  {
-    cout << "===Update over" << endl;
-    for (unsigned int k = 0; k < nv; k++)
-    {
-      cout << k << endl;
-      cout << "z: " << vtx.z[k] << " , t: " << vtx.t[k] << " , p: " << vtx.pk[k] << endl;
-      cout << " | " << vtx.szz[k] << "   " << vtx.stz[k] << "|" << endl;
-      cout << " | " << vtx.stz[k] << "   " << vtx.stt[k] << "|" << endl << endl;
-    }
-    cout << "=======" << endl;
-  }
+  // if(fVerbose > 3)
+  // {
+  //   cout << "===Update over" << endl;
+  //   for (unsigned int k = 0; k < nv; k++)
+  //   {
+  //     cout << k << endl;
+  //     cout << "z: " << vtx.z[k] << " , t: " << vtx.t[k] << " , p: " << vtx.pk[k] << endl;
+  //     cout << " | " << vtx.szz[k] << "   " << vtx.stz[k] << "|" << endl;
+  //     cout << " | " << vtx.stz[k] << "   " << vtx.stt[k] << "|" << endl << endl;
+  //   }
+  //   cout << "=======" << endl;
+  // }
 
   return delta2/nv;
 }
@@ -692,9 +763,9 @@ bool VertexFinderDAClusterizerZT::split(double &beta, vertex_t &vtx, tracks_t & 
         double pk_old = vtx.pk[k];
 
         // Compute splitting direction: given by the max eighenvalue eighenvector
-        double tn = (vtx.szz[k] - vtx.stt[k])*(vtx.szz[k] - vtx.stt[k]) + 4*vtx.stz[k]*vtx.stz[k];
-        tn = vtx.szz[k] - vtx.stt[k] + sqrt(tn);
-        double zn = -2*vtx.stz[k];
+        double zn = (vtx.szz[k] - vtx.stt[k])*(vtx.szz[k] - vtx.stt[k]) + 4*vtx.stz[k]*vtx.stz[k];
+        zn = vtx.szz[k] - vtx.stt[k] + sqrt(zn);
+        double tn = -2*vtx.stz[k];
         double norm = hypot(zn, tn);
         tn /= norm;
         zn /= norm;
@@ -772,7 +843,7 @@ bool VertexFinderDAClusterizerZT::split(double &beta, vertex_t &vtx, tracks_t & 
 
         // Compute final distance and split if the distance is enough
         double delta2 = (z1-z2)*(z1-z2)/(fVertexZSize*fVertexZSize) + (t1-t2)*(t1-t2)/(fVertexTSize*fVertexTSize);
-        if(delta2 > 0.5*fD2Merge);
+        if(delta2 > fD2Merge)
         {
           split = true;
           vtx.t[k] = t1;
@@ -808,29 +879,32 @@ bool VertexFinderDAClusterizerZT::merge(vertex_t & vtx, double d2_merge = 2)
 
   if(vtx.getSize() < 2) return merged;
 
-  for(unsigned int k1 = 0; k1 < vtx.getSize(); k1++)
-  {
-    for(unsigned int k2 = k1+1; k2 < vtx.getSize();)
+  bool last_merge = false;
+  do {
+    double min_d2 = d2_merge;
+    unsigned int k1_min, k2_min;
+    for(unsigned int k1 = 0; k1 < vtx.getSize(); k1++)
     {
-      if(vtx.DistanceSquare(k1, k2) > d2_merge)
+      for(unsigned int k2 = k1+1; k2 < vtx.getSize();k2++)
       {
-        k2++;
-      }
-      else
-      {
-        double new_pk = vtx.pk[k1] + vtx.pk[k2];
-        double new_z = (vtx.z[k1]*vtx.pk[k1] + vtx.z[k2]*vtx.pk[k2])/new_pk;
-        double new_t = (vtx.t[k1]*vtx.pk[k1] + vtx.t[k2]*vtx.pk[k2])/new_pk;
-
-        vtx.removeItem(k2);
-        vtx.z[k1] = new_z;
-        vtx.t[k1] = new_t;
-        vtx.pk[k1] = new_pk;
-
-        merged = true;
+        double d2_tmp = vtx.DistanceSquare(k1, k2);
+        if(d2_tmp < min_d2)
+        {
+          min_d2 = d2_tmp;
+          k1_min = k1;
+          k2_min = k2;
+        }
       }
     }
-  }
+
+    if(min_d2 < d2_merge)
+    {
+      vtx.mergeItems(k1_min, k2_min);
+      last_merge = true;
+      merged = true;
+    }
+    else last_merge = false;
+  } while(last_merge);
 
   return merged;
 }
@@ -863,78 +937,64 @@ vector<double> VertexFinderDAClusterizerZT::Compute_pk_exp_mBetaE(double beta, v
 
 //------------------------------------------------------------------------------
 // Eliminate clusters with only one significant/unique track
-// bool VertexFinderDAClusterizerZT::purge(vertex_t & vtx, track_t & tks, double & rho0, const double beta)
-// {
-//   constexpr double eps = 1.e-100;
-//   const unsigned int nv = vtx.getSize();
-//   const unsigned int nt = tks.getSize();
-//
-//   if (nv < 2)
-//     return false;
-//
-//   double sumpmin = nt;
-//   unsigned int k0 = nv;
-//
-//   int nUnique = 0;
-//   double sump = 0;
-//
-//   std::vector<double> inverse_zsums(nt), arg_cache(nt), eik_cache(nt);
-//   double * pinverse_zsums;
-//   double * parg_cache;
-//   double * peik_cache;
-//   pinverse_zsums = inverse_zsums.data();
-//   parg_cache = arg_cache.data();
-//   peik_cache = eik_cache.data();
-//   for(unsigned i = 0; i < nt; ++i) {
-//     inverse_zsums[i] = tks.Z_sum_[i] > eps ? 1./tks.Z_sum_[i] : 0.0;
-//   }
-//
-//   for (unsigned int k = 0; k < nv; ++k) {
-//
-//     nUnique = 0;
-//     sump = 0;
-//
-//     const double pmax = vtx.pk_[k] / (vtx.pk_[k] + rho0 * local_exp(-beta * dzCutOff_* dzCutOff_));
-//     const double pcut = uniquetrkweight_ * pmax;
-//     for(unsigned i = 0; i < nt; ++i) {
-//       const auto track_z = tks.z_[i];
-//       const auto track_t = tks.t_[i];
-//       const auto botrack_dz2 = -beta*tks.dz2_[i];
-//       const auto botrack_dt2 = -beta*tks.dt2_[i];
-//
-//       const auto mult_resz = track_z - vtx.z_[k];
-//       const auto mult_rest = track_t - vtx.t_[k];
-//       parg_cache[i] = botrack_dz2 * ( mult_resz * mult_resz ) + botrack_dt2 * ( mult_rest * mult_rest );
-//     }
-//     local_exp_list(parg_cache, peik_cache, nt);
-//     for (unsigned int i = 0; i < nt; ++i) {
-//       const double p = vtx.pk_[k] * peik_cache[i] * pinverse_zsums[i];
-//       sump += p;
-//       nUnique += ( ( p > pcut ) & ( tks.pi_[i] > 0 ) );
-//     }
-//
-//     if ((nUnique < 2) && (sump < sumpmin)) {
-//       sumpmin = sump;
-//       k0 = k;
-//     }
-//
-//   }
-//
-//   if (k0 != nv) {
-//     #ifdef VI_DEBUG
-//         if (verbose_) {
-//           std::cout  << "eliminating prototvtxpe at " << std::setw(10) << std::setprecision(4) << vtx.z_[k0] << "," << vtx.t_[k0]
-//     		 << " with sump=" << sumpmin
-//     		 << "  rho*nt =" << vtx.pk_[k0]*nt
-//     		 << endl;
-//         }
-//     #endif
-//     vtx.removeItem(k0);
-//     return true;
-//   } else {
-//     return false;
-//   }
-// }
+bool VertexFinderDAClusterizerZT::purge(vertex_t & vtx, tracks_t & tks, double & rho0, const double beta, double min_prob)
+{
+  const unsigned int nv = vtx.getSize();
+  const unsigned int nt = tks.getSize();
+
+  if (nv < 2)
+    return false;
+
+  double sumpmin = nt;
+  unsigned int k0 = nv;
+
+  int nUnique = 0;
+  double sump = 0;
+
+  double Z_init = rho0 * exp(-beta * fMuOutlayer * fMuOutlayer); // Add fDtCutOff here toghether  with this
+  vector<double> pk_exp_mBetaE = Compute_pk_exp_mBetaE(beta, vtx, tks, Z_init);
+
+  for (unsigned int k = 0; k < nv; ++k) {
+
+    nUnique = 0;
+    sump = 0;
+
+    double pmax = vtx.pk[k] / (vtx.pk[k] + rho0 * exp(-beta * fMuOutlayer* fMuOutlayer));
+    double pcut = min_prob * pmax;
+
+    for (unsigned int i = 0; i < nt; ++i) {
+      unsigned int idx = k*nt + i;
+
+      if(pk_exp_mBetaE[idx] == 0 || tks.Z[i] == 0)
+      {
+        continue;
+      }
+
+      double p = pk_exp_mBetaE[idx] / tks.Z[i];
+      sump += p;
+      if( ( p > pcut ) & ( tks.w[i] > 0 ) ) nUnique++;
+    }
+
+    if ((nUnique < 2) && (sump < sumpmin)) {
+      sumpmin = sump;
+      k0 = k;
+    }
+
+  }
+
+  if (k0 != nv) {
+    if (fVerbose > 5) {
+      std::cout  << "eliminating prototvtxpe at " << std::setw(10) << std::setprecision(4) << vtx.z[k0] << "," << vtx.t[k0]
+		 << " with sump=" << sumpmin
+		 << "  rho*nt =" << vtx.pk[k0]*nt
+		 << endl;
+    }
+    vtx.removeItem(k0);
+    return true;
+  } else {
+    return false;
+  }
+}
 
 
 // -----------------------------------------------------------------------------
