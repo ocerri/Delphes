@@ -331,6 +331,7 @@ void TrackSmearing::Process()
     if(fZOuterResolution > 0)
     {
       candidate->Position.SetZ(candidate->Position.Z() + gRandom->Gaus(0, fZOuterResolution));
+      candidate->PositionError.SetZ(fZOuterResolution);
     }
 
     if(pError*ctgThetaError*phiError > 0.)

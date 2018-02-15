@@ -435,10 +435,13 @@ public:
   Float_t YOuter; // track position (y component) at the tracker edge
   Float_t ZOuter; // track position (z component) at the tracker edge
 
-  Float_t Xd; // X coordinate of point of closest approach to vertex
-  Float_t Yd; // Y coordinate of point of closest approach to vertex
-  Float_t Zd; // Z coordinate of point of closest approach to vertex
-  Float_t Td;
+  Float_t Xd; // X coordinate of point of closest approach to z axis
+  Float_t Yd; // Y coordinate of point of closest approach to z axis
+  Float_t Zd; // Z coordinate of point of closest approach to z axis
+  Float_t Td; // T coordinate of ...
+
+  Float_t tof_gen;  //Time of flight MC
+  Float_t tof_reco; //Time of flight reco
 
   Float_t L; // track path length
   Float_t D0; // track transverse impact parameter
@@ -449,7 +452,8 @@ public:
   Float_t ErrorPhi; // track azimuthal angle error
   Float_t ErrorCtgTheta; // track cotangent of theta error
 
-  Float_t ErrorT; // time measurement error
+  Float_t ErrorTOut; // time measurement error
+  Float_t ErrorZOut; // Z out measurement error
   Float_t ErrorD0; // track transverse impact parameter error
   Float_t ErrorDZ; // track longitudinal impact parameter error
 

@@ -2,7 +2,7 @@
  *
  *  Cluster vertices from tracks using deterministic annealing and timing information
  *
- *  \authors M. Selvaggi, L. Gray
+ *  \authors O. Cerri
  *
  */
 
@@ -183,7 +183,7 @@ void VertexFinderDAClusterizerZT::Process()
 
   if (fVerbose){std::cout <<  " clustering returned  "<< ClusterArray->GetEntriesFast() << " clusters  from " << fInputArray->GetEntriesFast() << " selected tracks" <<std::endl;}
 
-  //loop over vertex candidates
+  // //loop over vertex candidates
   TIterator * ItClusterArray = ClusterArray->MakeIterator();
   ItClusterArray->Reset();
   Candidate *candidate;
@@ -195,47 +195,46 @@ void VertexFinderDAClusterizerZT::Process()
        cout << Form("Cluster %d has %d tracks ", k, candidate->GetCandidates()->GetEntriesFast()) << endl;
      }
 
-     /*
-     // Somehow fit the vertex from the tracks now
-     // loop over tracks belonging to this vertex
-     // TIter it1(candidate->GetCandidates());
-     // it1.Reset();
-     //
-     // Candidate *track;
-     // while((track = static_cast<Candidate*>(it1.Next())))
-     // {
-     //    itr++;
-     //
-     //    double t = track->InitialPosition.T()/c_light;
-     //    double dt = track->ErrorT/c_light;
-     //    const double time = t;
-     //    const double inverr = 1.0/dt;
-     //    meantime += time*inverr;
-     //    expv_x2  += time*time*inverr;
-     //    normw    += inverr;
-     //
-     //    // compute error position TBC
-     //    const double pt = track->Momentum.Pt();
-     //    const double z = track->DZ/10.0;
-     //    const double err_pt = track->ErrorPT;
-     //    const double err_z = track->ErrorDZ;
-     //
-     //    const double wi = (pt/(err_pt*err_z))*(pt/(err_pt*err_z));
-     //    meanpos += z*wi;
-     //
-     //    meanerr2 += err_z*err_z*wi;
-     //    normpos += wi;
-     //    sumpt2 += pt*pt;
-     //
-     // }
-     //
-     // candidate->Position.SetXYZT(0.0, 0.0, meanpos*10.0 , meantime*c_light);
-     // candidate->PositionError.SetXYZT(0.0, 0.0, errpos*10.0 , errtime*c_light);
-     // candidate->SumPT2 = sumpt2;
-     // candidate->ClusterNDF = itr;
-     // candidate->ClusterIndex = ivtx;
-     // ivtx++;
-     */
+
+  //    // Somehow fit the vertex from the tracks now
+  //    // loop over tracks belonging to this vertex
+  //    TIter it1(candidate->GetCandidates());
+  //    it1.Reset();
+  //
+  //    Candidate *track;
+  //    int n_tr = 0
+  //    while((track = static_cast<Candidate*>(it1.Next())))
+  //    {
+  //       n_tr++;
+  //
+  //       double t = track->InitialPosition.T()/c_light;
+  //       double dt = track->ErrorT/c_light;
+  //       const double time = t;
+  //       const double inverr = 1.0/dt;
+  //       meantime += time*inverr;
+  //       expv_x2  += time*time*inverr;
+  //       normw    += inverr;
+  //
+  //       // compute error position TBC
+  //       const double pt = track->Momentum.Pt();
+  //       const double z = track->DZ/10.0;
+  //       const double err_pt = track->ErrorPT;
+  //       const double err_z = track->ErrorDZ;
+  //
+  //       const double wi = (pt/(err_pt*err_z))*(pt/(err_pt*err_z));
+  //       meanpos += z*wi;
+  //
+  //       meanerr2 += err_z*err_z*wi;
+  //       normpos += wi;
+  //       sumpt2 += pt*pt;
+  //    }
+  //
+  //    candidate->Position.SetXYZT(0.0, 0.0, meanpos*10.0 , meantime*c_light);
+  //    candidate->PositionError.SetXYZT(0.0, 0.0, errpos*10.0 , errtime*c_light);
+  //    candidate->SumPT2 = sumpt2;
+  //    candidate->ClusterNDF = n_tr;
+  //    candidate->ClusterIndex = k;
+
 
      fVertexOutputArray->Add(candidate);
      k++;
@@ -279,49 +278,6 @@ void VertexFinderDAClusterizerZT::clusterize(TObjArray &clusters)
   if( fVerbose > 2){cout << "Cool down untill reaching the temperature to finish increasing the number of vertexes" << endl;}
 
   double rho0=0.0;  // start with no outlier rejection
-  // while(beta < fBetaStop)
-  // {
-  //   beta /= fCoolingFactor;
-  //   if(beta > fBetaStop) beta = fBetaStop;
-  //
-  //   unsigned int i_sp = 0;
-  //   while(split(beta, vtx, tks, fSplittingSize) && i_sp < fMaxIterations)
-  //   {
-  //     if( fVerbose > 10 ) plot_status(beta, vtx, tks, i_sp, "Asp");
-  //     unsigned int niter=0;
-  //     double delta2 = 0;
-  //     do  {
-  //       delta2 = update(beta, tks, vtx, rho0);
-  //
-  //       if( fVerbose > 10 ) plot_status(beta, vtx, tks, niter+ i_sp*fMaxIterations, "Bup");
-  //       if (fVerbose > 3)
-  //       {
-  //         cout << niter << ": " << delta2 << endl;
-  //       }
-  //       niter++;
-  //     }
-  //     while (delta2 > fD2UpdateLim &&  niter < fMaxIterations);
-  //
-  //     unsigned int n_it = 0;
-  //     while(merge(vtx, fD2Merge) && n_it < fMaxIterations)
-  //     {
-  //       unsigned int niter=0;
-  //       double delta2 = 0;
-  //       do  {
-  //         delta2 = update(beta, tks, vtx, rho0);
-  //         niter++;
-  //       }
-  //       while (delta2 > fD2UpdateLim &&  niter < fMaxIterations);
-  //       n_it++;
-  //
-  //       if( fVerbose > 10 ) plot_status(beta, vtx, tks, n_it, "Cme");
-  //     }
-  //
-  //     i_sp++;
-  //   }
-  //
-  //
-  // }
 
   unsigned int last_round = 0;
   while(last_round < 2)
@@ -464,7 +420,9 @@ void VertexFinderDAClusterizerZT::clusterize(TObjArray &clusters)
 
     candidate->ClusterIndex = k;
     candidate->Position.SetXYZT(0.0, 0.0, vtx.z[k] , vtx.t[k]*1E-9*c_light);
-    candidate->SumPt = 0;
+    candidate->PositionError.SetXYZT(0.0, 0.0, fVertexZSize , fVertexTSize*1E-9*c_light);
+    candidate->SumPT2 = 0;
+    candidate->ClusterNDF = 0;
 
     clusters.Add(candidate);
   }
@@ -491,6 +449,7 @@ void VertexFinderDAClusterizerZT::clusterize(TObjArray &clusters)
 
       double pv_max = vtx.pk[k] / (vtx.pk[k] + rho0 * exp(-beta * fMuOutlayer* fMuOutlayer));
       double p = pk_exp_mBetaE[idx] / tks.Z[i];
+
       p /= pv_max;
 
       if(p > p_max)
@@ -503,12 +462,15 @@ void VertexFinderDAClusterizerZT::clusterize(TObjArray &clusters)
     if(p_max > fMinTrackProb)
     {
       tks.tt[i]->ClusterIndex = k_max;
+      tks.tt[i]->InitialPosition.SetT(1E-9*vtx.t[k_max]*c_light);
       ((Candidate *) clusters.At(k_max))->AddCandidate(tks.tt[i]);
-      ((Candidate *) clusters.At(k_max))->SumPt += tks.tt[i]->Momentum.Pt();
+      ((Candidate *) clusters.At(k_max))->SumPT2 += tks.tt[i]->Momentum.Pt()*tks.tt[i]->Momentum.Pt();
+      ((Candidate *) clusters.At(k_max))->ClusterNDF += 1;
     }
     else
     {
       tks.tt[i]->ClusterIndex = -1;
+      tks.tt[i]->InitialPosition.SetT(1E3*1000000*c_light);
     }
   }
 
@@ -547,6 +509,7 @@ void VertexFinderDAClusterizerZT::fill(tracks_t &tks)
     e = sqrt(p*p + candidate->Mass*candidate->Mass);
     bz = candidate->Momentum.Pt() * candidate->CtgTheta/e;
     t = candidate->Position.T()*1.E9/c_light; // from [mm] to [ps]
+    if(t < -9999) continue;                    // Means that the time information has not been added
     t += (z - candidate->Position.Z())*1E9/(c_light*bz);
     if(fabs(t) > 3*fDtCutOff) continue;
 
@@ -1138,8 +1101,8 @@ void VertexFinderDAClusterizerZT::plot_status_end(vertex_t &vtx, tracks_t &tks)
   const int Number = 3;
   double Red[Number]    = { 1.00, 0.00, 0.00};
   double Green[Number]  = { 0.00, 1.00, 0.00};
-  double Blue[Number]   = { 0.00, 0.00, 1.00};
-  double Length[Number] = { 0.90, 0.50, 0.90 };
+  double Blue[Number]   = { 1.00, 0.00, 1.00};
+  double Length[Number] = { 0.00, 0.50, 1.00 };
   int FI = TColor::CreateGradientColorTable(Number,Length,Red,Green,Blue,nv);
   for (unsigned int i=0;i<nv;i++) MyPalette[i] = FI+i;
 

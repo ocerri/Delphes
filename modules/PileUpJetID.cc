@@ -163,7 +163,7 @@ void PileUpJetID::Process()
 	}
 	float tow_sumT = 0;
 	float tow_sumW = 0;
-	for (int i = 0 ; i < constituent->ECalEnergyTimePairs.size() ; i++) {
+	for (unsigned int i = 0 ; i < constituent->ECalEnergyTimePairs.size() ; i++) {
 	  float w = TMath::Sqrt(constituent->ECalEnergyTimePairs[i].first);
 	  if (fAverageEachTower) {
             tow_sumT += w*constituent->ECalEnergyTimePairs[i].second;
@@ -280,7 +280,7 @@ void PileUpJetID::Process()
       }
     }
 
-    //    cout << " Pt Eta MeanSqDeltaR Beta PassId " << candidate->Momentum.Pt() 
+    //    cout << " Pt Eta MeanSqDeltaR Beta PassId " << candidate->Momentum.Pt()
     //	 << " " << candidate->Momentum.Eta() << " " << candidate->MeanSqDeltaR << " " << candidate->Beta << " " << passId << endl;
 
     if (passId) {

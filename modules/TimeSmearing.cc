@@ -110,9 +110,9 @@ void TimeSmearing::Process()
     {
       tf_smeared = tf + fTimeResolution*gRandom->Gaus(0, 1);
     }
-    else tf_smeared = -1;
+    else tf_smeared = -9999;
 
-    double beta_particle = 1;
+    double beta_particle = candidate->Momentum.P()/candidate->Momentum.E();
     ti = tf_smeared - candidate->Ld*1.0E-3/(c_light*beta_particle);
 
     mother = candidate;
