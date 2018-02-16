@@ -389,7 +389,7 @@ tmp/modules/ModulesDict.$(SrcSuf): \
 	modules/JetFakeParticle.h \
 	modules/VertexSorter.h \
 	modules/VertexFinder.h \
-	modules/VertexFinderDA4D.h \
+	modules/AdaptiveVertexFitting4D.h \
 	modules/VertexFinderDAClusterizerZT.h \
 	modules/ExampleModule.h
 tmp/modules/ModulesDict$(PcmSuf): \
@@ -582,6 +582,16 @@ tmp/external/Hector/H_VerticalKicker.$(ObjSuf): \
 	external/Hector/H_VerticalKicker.$(SrcSuf)
 tmp/external/Hector/H_VerticalQuadrupole.$(ObjSuf): \
 	external/Hector/H_VerticalQuadrupole.$(SrcSuf)
+tmp/modules/AdaptiveVertexFitting4D.$(ObjSuf): \
+	modules/AdaptiveVertexFitting4D.$(SrcSuf) \
+	modules/AdaptiveVertexFitting4D.h \
+	classes/DelphesClasses.h \
+	classes/DelphesFactory.h \
+	classes/DelphesFormula.h \
+	classes/DelphesPileUpReader.h \
+	external/ExRootAnalysis/ExRootResult.h \
+	external/ExRootAnalysis/ExRootFilter.h \
+	external/ExRootAnalysis/ExRootClassifier.h
 tmp/modules/AngularSmearing.$(ObjSuf): \
 	modules/AngularSmearing.$(SrcSuf) \
 	modules/AngularSmearing.h \
@@ -952,16 +962,6 @@ tmp/modules/VertexFinder.$(ObjSuf): \
 	external/ExRootAnalysis/ExRootResult.h \
 	external/ExRootAnalysis/ExRootFilter.h \
 	external/ExRootAnalysis/ExRootClassifier.h
-tmp/modules/VertexFinderDA4D.$(ObjSuf): \
-	modules/VertexFinderDA4D.$(SrcSuf) \
-	modules/VertexFinderDA4D.h \
-	classes/DelphesClasses.h \
-	classes/DelphesFactory.h \
-	classes/DelphesFormula.h \
-	classes/DelphesPileUpReader.h \
-	external/ExRootAnalysis/ExRootResult.h \
-	external/ExRootAnalysis/ExRootFilter.h \
-	external/ExRootAnalysis/ExRootClassifier.h
 tmp/modules/VertexFinderDAClusterizerZT.$(ObjSuf): \
 	modules/VertexFinderDAClusterizerZT.$(SrcSuf) \
 	modules/VertexFinderDAClusterizerZT.h \
@@ -1040,6 +1040,7 @@ DELPHES_OBJ +=  \
 	tmp/external/Hector/H_TransportMatrices.$(ObjSuf) \
 	tmp/external/Hector/H_VerticalKicker.$(ObjSuf) \
 	tmp/external/Hector/H_VerticalQuadrupole.$(ObjSuf) \
+	tmp/modules/AdaptiveVertexFitting4D.$(ObjSuf) \
 	tmp/modules/AngularSmearing.$(ObjSuf) \
 	tmp/modules/BTagging.$(ObjSuf) \
 	tmp/modules/BeamSpotFilter.$(ObjSuf) \
@@ -1080,7 +1081,6 @@ DELPHES_OBJ +=  \
 	tmp/modules/TreeWriter.$(ObjSuf) \
 	tmp/modules/UniqueObjectFinder.$(ObjSuf) \
 	tmp/modules/VertexFinder.$(ObjSuf) \
-	tmp/modules/VertexFinderDA4D.$(ObjSuf) \
 	tmp/modules/VertexFinderDAClusterizerZT.$(ObjSuf) \
 	tmp/modules/VertexSorter.$(ObjSuf) \
 	tmp/modules/Weighter.$(ObjSuf)
@@ -1689,10 +1689,6 @@ TCL_OBJ +=  \
 	tmp/external/tcl/tclUtil.$(ObjSuf) \
 	tmp/external/tcl/tclVar.$(ObjSuf)
 
-modules/VertexFinderDA4D.h: \
-	classes/DelphesModule.h
-	@touch $@
-
 modules/TrackSmearing.h: \
 	classes/DelphesModule.h
 	@touch $@
@@ -1986,6 +1982,10 @@ modules/TrackCountingBTagging.h: \
 	@touch $@
 
 modules/PileUpMergerPythia8.h: \
+	classes/DelphesModule.h
+	@touch $@
+
+modules/AdaptiveVertexFitting4D.h: \
 	classes/DelphesModule.h
 	@touch $@
 

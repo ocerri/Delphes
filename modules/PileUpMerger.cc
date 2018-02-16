@@ -155,11 +155,8 @@ void PileUpMerger::Process()
 
   while((candidate = static_cast<Candidate*>(fItInputArray->Next())))
   {
-    vx += candidate->Position.X();
-    vy += candidate->Position.Y();
     z = candidate->Position.Z();
     t = candidate->Position.T();
-    pt = candidate->Momentum.Pt();
 
     // cancel any possible offset in position and time the input file
     candidate->Position.SetZ(z + dz);
@@ -171,23 +168,14 @@ void PileUpMerger::Process()
 
     if(TMath::Abs(candidate->Charge) >  1.0E-9)
     {
+      sumpt2 += candidate->Momentum.Pt() * candidate->Momentum.Pt();
       nch++;
-      sumpt2 += pt*pt;
       vertex->AddCandidate(candidate);
     }
   }
 
-  if(numberOfParticles > 0)
-  {
-    vx /= sumpt2;
-    vy /= sumpt2;
-  }
-  //Add Olmo Jan 26 2017
-  vx = 0;
-  vy = 0;
-
   nvtx++;
-  vertex->Position.SetXYZT(vx, vy, dz, dt);
+  vertex->Position.SetXYZT(0, 0, dz, dt);
   vertex->PositionError.SetXYZT(0,0,0,0);
   vertex->ClusterIndex = nvtx;
   vertex->ClusterNDF = nch;

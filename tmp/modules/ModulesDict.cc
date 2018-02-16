@@ -69,7 +69,7 @@
 #include "modules/JetFakeParticle.h"
 #include "modules/VertexSorter.h"
 #include "modules/VertexFinder.h"
-#include "modules/VertexFinderDA4D.h"
+#include "modules/AdaptiveVertexFitting4D.h"
 #include "modules/VertexFinderDAClusterizerZT.h"
 #include "modules/ExampleModule.h"
 
@@ -121,7 +121,7 @@
 #pragma link C++ class JetFakeParticle+;
 #pragma link C++ class VertexSorter+;
 #pragma link C++ class VertexFinder+;
-#pragma link C++ class VertexFinderDA4D+;
+#pragma link C++ class AdaptiveVertexFitting4D+;
 #pragma link C++ class VertexFinderDAClusterizerZT+;
 #pragma link C++ class ExampleModule+;
 
@@ -206,7 +206,7 @@ namespace std {} using namespace std;
 #include "modules/JetFakeParticle.h"
 #include "modules/VertexSorter.h"
 #include "modules/VertexFinder.h"
-#include "modules/VertexFinderDA4D.h"
+#include "modules/AdaptiveVertexFitting4D.h"
 #include "modules/VertexFinderDAClusterizerZT.h"
 #include "modules/ExampleModule.h"
 
@@ -1525,35 +1525,35 @@ namespace ROOT {
 } // end of namespace ROOT
 
 namespace ROOT {
-   static void *new_VertexFinderDA4D(void *p = 0);
-   static void *newArray_VertexFinderDA4D(Long_t size, void *p);
-   static void delete_VertexFinderDA4D(void *p);
-   static void deleteArray_VertexFinderDA4D(void *p);
-   static void destruct_VertexFinderDA4D(void *p);
+   static void *new_AdaptiveVertexFitting4D(void *p = 0);
+   static void *newArray_AdaptiveVertexFitting4D(Long_t size, void *p);
+   static void delete_AdaptiveVertexFitting4D(void *p);
+   static void deleteArray_AdaptiveVertexFitting4D(void *p);
+   static void destruct_AdaptiveVertexFitting4D(void *p);
 
    // Function generating the singleton type initializer
-   static TGenericClassInfo *GenerateInitInstanceLocal(const ::VertexFinderDA4D*)
+   static TGenericClassInfo *GenerateInitInstanceLocal(const ::AdaptiveVertexFitting4D*)
    {
-      ::VertexFinderDA4D *ptr = 0;
-      static ::TVirtualIsAProxy* isa_proxy = new ::TInstrumentedIsAProxy< ::VertexFinderDA4D >(0);
+      ::AdaptiveVertexFitting4D *ptr = 0;
+      static ::TVirtualIsAProxy* isa_proxy = new ::TInstrumentedIsAProxy< ::AdaptiveVertexFitting4D >(0);
       static ::ROOT::TGenericClassInfo 
-         instance("VertexFinderDA4D", ::VertexFinderDA4D::Class_Version(), "modules/VertexFinderDA4D.h", 21,
-                  typeid(::VertexFinderDA4D), ::ROOT::Internal::DefineBehavior(ptr, ptr),
-                  &::VertexFinderDA4D::Dictionary, isa_proxy, 4,
-                  sizeof(::VertexFinderDA4D) );
-      instance.SetNew(&new_VertexFinderDA4D);
-      instance.SetNewArray(&newArray_VertexFinderDA4D);
-      instance.SetDelete(&delete_VertexFinderDA4D);
-      instance.SetDeleteArray(&deleteArray_VertexFinderDA4D);
-      instance.SetDestructor(&destruct_VertexFinderDA4D);
+         instance("AdaptiveVertexFitting4D", ::AdaptiveVertexFitting4D::Class_Version(), "modules/AdaptiveVertexFitting4D.h", 32,
+                  typeid(::AdaptiveVertexFitting4D), ::ROOT::Internal::DefineBehavior(ptr, ptr),
+                  &::AdaptiveVertexFitting4D::Dictionary, isa_proxy, 4,
+                  sizeof(::AdaptiveVertexFitting4D) );
+      instance.SetNew(&new_AdaptiveVertexFitting4D);
+      instance.SetNewArray(&newArray_AdaptiveVertexFitting4D);
+      instance.SetDelete(&delete_AdaptiveVertexFitting4D);
+      instance.SetDeleteArray(&deleteArray_AdaptiveVertexFitting4D);
+      instance.SetDestructor(&destruct_AdaptiveVertexFitting4D);
       return &instance;
    }
-   TGenericClassInfo *GenerateInitInstance(const ::VertexFinderDA4D*)
+   TGenericClassInfo *GenerateInitInstance(const ::AdaptiveVertexFitting4D*)
    {
-      return GenerateInitInstanceLocal((::VertexFinderDA4D*)0);
+      return GenerateInitInstanceLocal((::AdaptiveVertexFitting4D*)0);
    }
    // Static variable to force the class initialization
-   static ::ROOT::TGenericClassInfo *_R__UNIQUE_DICT_(Init) = GenerateInitInstanceLocal((const ::VertexFinderDA4D*)0x0); R__UseDummy(_R__UNIQUE_DICT_(Init));
+   static ::ROOT::TGenericClassInfo *_R__UNIQUE_DICT_(Init) = GenerateInitInstanceLocal((const ::AdaptiveVertexFitting4D*)0x0); R__UseDummy(_R__UNIQUE_DICT_(Init));
 } // end of namespace ROOT
 
 namespace ROOT {
@@ -3056,37 +3056,37 @@ TClass *VertexFinder::Class()
 }
 
 //______________________________________________________________________________
-atomic_TClass_ptr VertexFinderDA4D::fgIsA(0);  // static to hold class pointer
+atomic_TClass_ptr AdaptiveVertexFitting4D::fgIsA(0);  // static to hold class pointer
 
 //______________________________________________________________________________
-const char *VertexFinderDA4D::Class_Name()
+const char *AdaptiveVertexFitting4D::Class_Name()
 {
-   return "VertexFinderDA4D";
+   return "AdaptiveVertexFitting4D";
 }
 
 //______________________________________________________________________________
-const char *VertexFinderDA4D::ImplFileName()
+const char *AdaptiveVertexFitting4D::ImplFileName()
 {
-   return ::ROOT::GenerateInitInstanceLocal((const ::VertexFinderDA4D*)0x0)->GetImplFileName();
+   return ::ROOT::GenerateInitInstanceLocal((const ::AdaptiveVertexFitting4D*)0x0)->GetImplFileName();
 }
 
 //______________________________________________________________________________
-int VertexFinderDA4D::ImplFileLine()
+int AdaptiveVertexFitting4D::ImplFileLine()
 {
-   return ::ROOT::GenerateInitInstanceLocal((const ::VertexFinderDA4D*)0x0)->GetImplFileLine();
+   return ::ROOT::GenerateInitInstanceLocal((const ::AdaptiveVertexFitting4D*)0x0)->GetImplFileLine();
 }
 
 //______________________________________________________________________________
-TClass *VertexFinderDA4D::Dictionary()
+TClass *AdaptiveVertexFitting4D::Dictionary()
 {
-   fgIsA = ::ROOT::GenerateInitInstanceLocal((const ::VertexFinderDA4D*)0x0)->GetClass();
+   fgIsA = ::ROOT::GenerateInitInstanceLocal((const ::AdaptiveVertexFitting4D*)0x0)->GetClass();
    return fgIsA;
 }
 
 //______________________________________________________________________________
-TClass *VertexFinderDA4D::Class()
+TClass *AdaptiveVertexFitting4D::Class()
 {
-   if (!fgIsA.load()) { R__LOCKGUARD2(gInterpreterMutex); fgIsA = ::ROOT::GenerateInitInstanceLocal((const ::VertexFinderDA4D*)0x0)->GetClass(); }
+   if (!fgIsA.load()) { R__LOCKGUARD2(gInterpreterMutex); fgIsA = ::ROOT::GenerateInitInstanceLocal((const ::AdaptiveVertexFitting4D*)0x0)->GetClass(); }
    return fgIsA;
 }
 
@@ -4514,37 +4514,37 @@ namespace ROOT {
 } // end of namespace ROOT for class ::VertexFinder
 
 //______________________________________________________________________________
-void VertexFinderDA4D::Streamer(TBuffer &R__b)
+void AdaptiveVertexFitting4D::Streamer(TBuffer &R__b)
 {
-   // Stream an object of class VertexFinderDA4D.
+   // Stream an object of class AdaptiveVertexFitting4D.
 
    if (R__b.IsReading()) {
-      R__b.ReadClassBuffer(VertexFinderDA4D::Class(),this);
+      R__b.ReadClassBuffer(AdaptiveVertexFitting4D::Class(),this);
    } else {
-      R__b.WriteClassBuffer(VertexFinderDA4D::Class(),this);
+      R__b.WriteClassBuffer(AdaptiveVertexFitting4D::Class(),this);
    }
 }
 
 namespace ROOT {
    // Wrappers around operator new
-   static void *new_VertexFinderDA4D(void *p) {
-      return  p ? new(p) ::VertexFinderDA4D : new ::VertexFinderDA4D;
+   static void *new_AdaptiveVertexFitting4D(void *p) {
+      return  p ? new(p) ::AdaptiveVertexFitting4D : new ::AdaptiveVertexFitting4D;
    }
-   static void *newArray_VertexFinderDA4D(Long_t nElements, void *p) {
-      return p ? new(p) ::VertexFinderDA4D[nElements] : new ::VertexFinderDA4D[nElements];
+   static void *newArray_AdaptiveVertexFitting4D(Long_t nElements, void *p) {
+      return p ? new(p) ::AdaptiveVertexFitting4D[nElements] : new ::AdaptiveVertexFitting4D[nElements];
    }
    // Wrapper around operator delete
-   static void delete_VertexFinderDA4D(void *p) {
-      delete ((::VertexFinderDA4D*)p);
+   static void delete_AdaptiveVertexFitting4D(void *p) {
+      delete ((::AdaptiveVertexFitting4D*)p);
    }
-   static void deleteArray_VertexFinderDA4D(void *p) {
-      delete [] ((::VertexFinderDA4D*)p);
+   static void deleteArray_AdaptiveVertexFitting4D(void *p) {
+      delete [] ((::AdaptiveVertexFitting4D*)p);
    }
-   static void destruct_VertexFinderDA4D(void *p) {
-      typedef ::VertexFinderDA4D current_t;
+   static void destruct_AdaptiveVertexFitting4D(void *p) {
+      typedef ::AdaptiveVertexFitting4D current_t;
       ((current_t*)p)->~current_t();
    }
-} // end of namespace ROOT for class ::VertexFinderDA4D
+} // end of namespace ROOT for class ::AdaptiveVertexFitting4D
 
 //______________________________________________________________________________
 void VertexFinderDAClusterizerZT::Streamer(TBuffer &R__b)
@@ -5426,7 +5426,7 @@ class __attribute__((annotate("$clingAutoload$modules/JetFlavorAssociation.h")))
 class __attribute__((annotate("$clingAutoload$modules/JetFakeParticle.h")))  JetFakeParticle;
 class __attribute__((annotate("$clingAutoload$modules/VertexSorter.h")))  VertexSorter;
 class __attribute__((annotate("$clingAutoload$modules/VertexFinder.h")))  VertexFinder;
-class __attribute__((annotate("$clingAutoload$modules/VertexFinderDA4D.h")))  VertexFinderDA4D;
+class __attribute__((annotate("$clingAutoload$modules/AdaptiveVertexFitting4D.h")))  AdaptiveVertexFitting4D;
 class __attribute__((annotate("$clingAutoload$modules/VertexFinderDAClusterizerZT.h")))  VertexFinderDAClusterizerZT;
 class __attribute__((annotate("$clingAutoload$modules/ExampleModule.h")))  ExampleModule;
 )DICTFWDDCLS";
@@ -5507,7 +5507,7 @@ class __attribute__((annotate("$clingAutoload$modules/ExampleModule.h")))  Examp
 #include "modules/JetFakeParticle.h"
 #include "modules/VertexSorter.h"
 #include "modules/VertexFinder.h"
-#include "modules/VertexFinderDA4D.h"
+#include "modules/AdaptiveVertexFitting4D.h"
 #include "modules/VertexFinderDAClusterizerZT.h"
 #include "modules/ExampleModule.h"
 
@@ -5559,7 +5559,7 @@ class __attribute__((annotate("$clingAutoload$modules/ExampleModule.h")))  Examp
 #pragma link C++ class JetFakeParticle+;
 #pragma link C++ class VertexSorter+;
 #pragma link C++ class VertexFinder+;
-#pragma link C++ class VertexFinderDA4D+;
+#pragma link C++ class AdaptiveVertexFitting4D+;
 #pragma link C++ class VertexFinderDAClusterizerZT+;
 #pragma link C++ class ExampleModule+;
 
@@ -5568,6 +5568,7 @@ class __attribute__((annotate("$clingAutoload$modules/ExampleModule.h")))  Examp
 #undef  _BACKWARD_BACKWARD_WARNING_H
 )DICTPAYLOAD";
     static const char* classesHeaders[]={
+"AdaptiveVertexFitting4D", payloadCode, "@",
 "AngularSmearing", payloadCode, "@",
 "BTagging", payloadCode, "@",
 "BeamSpotFilter", payloadCode, "@",
@@ -5608,7 +5609,6 @@ class __attribute__((annotate("$clingAutoload$modules/ExampleModule.h")))  Examp
 "TreeWriter", payloadCode, "@",
 "UniqueObjectFinder", payloadCode, "@",
 "VertexFinder", payloadCode, "@",
-"VertexFinderDA4D", payloadCode, "@",
 "VertexFinderDAClusterizerZT", payloadCode, "@",
 "VertexSorter", payloadCode, "@",
 "Weighter", payloadCode, "@",

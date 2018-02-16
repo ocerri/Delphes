@@ -44,8 +44,11 @@
 
 using namespace std;
 
-static const Double_t c_light   = 2.99792458e+8;
-
+namespace vtx_DAZT
+{
+  static const Double_t c_light = 2.99792458e+8; // [m/s]
+}
+using namespace vtx_DAZT;
 
 //------------------------------------------------------------------------------
 
@@ -107,7 +110,6 @@ void VertexFinderDAClusterizerZT::Init()
   fInputArray = ImportArray(GetString("InputArray", "TrackSmearing/tracks"));
   fItInputArray = fInputArray->MakeIterator();
 
-  fOutputArray = ExportArray(GetString("OutputArray", "tracks"));
   fVertexOutputArray = ExportArray(GetString("VertexOutputArray", "vertices"));
 
   if(fVerbose)
