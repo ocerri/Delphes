@@ -244,7 +244,7 @@ void TreeWriter::ProcessVertices(ExRootTreeBranch *branch, TObjArray *array)
 
   const Double_t c_light = 2.99792458E8;
 
-  Double_t x, y, z, t, xError, yError, zError, tError, sigma, sumPT2, btvSumPT2, genDeltaZ, genSumPT2;
+  Double_t sigma, sumPT2, btvSumPT2, genDeltaZ, genSumPT2;
   UInt_t index, ndf;
 
   CompBase *compare = Candidate::fgCompare;
@@ -265,16 +265,6 @@ void TreeWriter::ProcessVertices(ExRootTreeBranch *branch, TObjArray *array)
     genDeltaZ = candidate->GenDeltaZ;
     genSumPT2 = candidate->GenSumPT2;
 
-    x = candidate->Position.X();
-    y = candidate->Position.Y();
-    z = candidate->Position.Z();
-    t = candidate->Position.T()*1.0E-3/c_light;
-
-    xError = candidate->PositionError.X ();
-    yError = candidate->PositionError.Y ();
-    zError = candidate->PositionError.Z ();
-    tError = candidate->ErrorT*1.0E-3/c_light;
-
     entry = static_cast<Vertex*>(branch->NewEntry());
 
     entry->Index = index;
@@ -285,15 +275,15 @@ void TreeWriter::ProcessVertices(ExRootTreeBranch *branch, TObjArray *array)
     entry->GenDeltaZ = genDeltaZ;
     entry->GenSumPT2 = genSumPT2;
 
-    entry->X = x;
-    entry->Y = y;
-    entry->Z = z;
-    entry->T = t;
+    entry->X = candidate->Position.X();;
+    entry->Y = candidate->Position.Y();;
+    entry->Z = candidate->Position.Z();;
+    entry->T = candidate->Position.T()*1.0E-3/c_light;;
 
-    entry->ErrorX = xError;
-    entry->ErrorY = yError;
-    entry->ErrorZ = zError;
-    entry->ErrorT = tError;
+    entry->ErrorX = candidate->PositionError.X ();;
+    entry->ErrorY = candidate->PositionError.Y ();;
+    entry->ErrorZ = candidate->PositionError.Z ();;
+    entry->ErrorT = candidate->PositionError.T() *1.0E-3/c_light;;
 
 
     TIter itConstituents(candidate->GetCandidates());

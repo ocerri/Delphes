@@ -1537,7 +1537,7 @@ namespace ROOT {
       ::AdaptiveVertexFitting4D *ptr = 0;
       static ::TVirtualIsAProxy* isa_proxy = new ::TInstrumentedIsAProxy< ::AdaptiveVertexFitting4D >(0);
       static ::ROOT::TGenericClassInfo 
-         instance("AdaptiveVertexFitting4D", ::AdaptiveVertexFitting4D::Class_Version(), "modules/AdaptiveVertexFitting4D.h", 32,
+         instance("AdaptiveVertexFitting4D", ::AdaptiveVertexFitting4D::Class_Version(), "modules/AdaptiveVertexFitting4D.h", 34,
                   typeid(::AdaptiveVertexFitting4D), ::ROOT::Internal::DefineBehavior(ptr, ptr),
                   &::AdaptiveVertexFitting4D::Dictionary, isa_proxy, 4,
                   sizeof(::AdaptiveVertexFitting4D) );

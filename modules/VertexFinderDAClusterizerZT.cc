@@ -465,6 +465,8 @@ void VertexFinderDAClusterizerZT::clusterize(TObjArray &clusters)
     {
       tks.tt[i]->ClusterIndex = k_max;
       tks.tt[i]->InitialPosition.SetT(1E-9*vtx.t[k_max]*c_light);
+      tks.tt[i]->InitialPosition.SetZ(vtx.z[k_max]);
+
       ((Candidate *) clusters.At(k_max))->AddCandidate(tks.tt[i]);
       ((Candidate *) clusters.At(k_max))->SumPT2 += tks.tt[i]->Momentum.Pt()*tks.tt[i]->Momentum.Pt();
       ((Candidate *) clusters.At(k_max))->ClusterNDF += 1;
@@ -473,6 +475,7 @@ void VertexFinderDAClusterizerZT::clusterize(TObjArray &clusters)
     {
       tks.tt[i]->ClusterIndex = -1;
       tks.tt[i]->InitialPosition.SetT(1E3*1000000*c_light);
+      tks.tt[i]->InitialPosition.SetZ(1E8);
     }
   }
 
