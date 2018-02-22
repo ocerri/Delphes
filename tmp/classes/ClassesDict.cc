@@ -442,7 +442,7 @@ namespace ROOT {
       ::MissingET *ptr = 0;
       static ::TVirtualIsAProxy* isa_proxy = new ::TInstrumentedIsAProxy< ::MissingET >(0);
       static ::ROOT::TGenericClassInfo 
-         instance("MissingET", ::MissingET::Class_Version(), "classes/DelphesClasses.h", 209,
+         instance("MissingET", ::MissingET::Class_Version(), "classes/DelphesClasses.h", 210,
                   typeid(::MissingET), ::ROOT::Internal::DefineBehavior(ptr, ptr),
                   &::MissingET::Dictionary, isa_proxy, 4,
                   sizeof(::MissingET) );
@@ -474,7 +474,7 @@ namespace ROOT {
       ::ScalarHT *ptr = 0;
       static ::TVirtualIsAProxy* isa_proxy = new ::TInstrumentedIsAProxy< ::ScalarHT >(0);
       static ::ROOT::TGenericClassInfo 
-         instance("ScalarHT", ::ScalarHT::Class_Version(), "classes/DelphesClasses.h", 223,
+         instance("ScalarHT", ::ScalarHT::Class_Version(), "classes/DelphesClasses.h", 224,
                   typeid(::ScalarHT), ::ROOT::Internal::DefineBehavior(ptr, ptr),
                   &::ScalarHT::Dictionary, isa_proxy, 4,
                   sizeof(::ScalarHT) );
@@ -506,7 +506,7 @@ namespace ROOT {
       ::Rho *ptr = 0;
       static ::TVirtualIsAProxy* isa_proxy = new ::TInstrumentedIsAProxy< ::Rho >(0);
       static ::ROOT::TGenericClassInfo 
-         instance("Rho", ::Rho::Class_Version(), "classes/DelphesClasses.h", 233,
+         instance("Rho", ::Rho::Class_Version(), "classes/DelphesClasses.h", 234,
                   typeid(::Rho), ::ROOT::Internal::DefineBehavior(ptr, ptr),
                   &::Rho::Dictionary, isa_proxy, 4,
                   sizeof(::Rho) );
@@ -538,7 +538,7 @@ namespace ROOT {
       ::Weight *ptr = 0;
       static ::TVirtualIsAProxy* isa_proxy = new ::TInstrumentedIsAProxy< ::Weight >(0);
       static ::ROOT::TGenericClassInfo 
-         instance("Weight", ::Weight::Class_Version(), "classes/DelphesClasses.h", 244,
+         instance("Weight", ::Weight::Class_Version(), "classes/DelphesClasses.h", 245,
                   typeid(::Weight), ::ROOT::Internal::DefineBehavior(ptr, ptr),
                   &::Weight::Dictionary, isa_proxy, 4,
                   sizeof(::Weight) );
@@ -570,7 +570,7 @@ namespace ROOT {
       ::Photon *ptr = 0;
       static ::TVirtualIsAProxy* isa_proxy = new ::TInstrumentedIsAProxy< ::Photon >(0);
       static ::ROOT::TGenericClassInfo 
-         instance("Photon", ::Photon::Class_Version(), "classes/DelphesClasses.h", 254,
+         instance("Photon", ::Photon::Class_Version(), "classes/DelphesClasses.h", 255,
                   typeid(::Photon), ::ROOT::Internal::DefineBehavior(ptr, ptr),
                   &::Photon::Dictionary, isa_proxy, 4,
                   sizeof(::Photon) );
@@ -602,7 +602,7 @@ namespace ROOT {
       ::Electron *ptr = 0;
       static ::TVirtualIsAProxy* isa_proxy = new ::TInstrumentedIsAProxy< ::Electron >(0);
       static ::ROOT::TGenericClassInfo 
-         instance("Electron", ::Electron::Class_Version(), "classes/DelphesClasses.h", 287,
+         instance("Electron", ::Electron::Class_Version(), "classes/DelphesClasses.h", 288,
                   typeid(::Electron), ::ROOT::Internal::DefineBehavior(ptr, ptr),
                   &::Electron::Dictionary, isa_proxy, 4,
                   sizeof(::Electron) );
@@ -634,7 +634,7 @@ namespace ROOT {
       ::Muon *ptr = 0;
       static ::TVirtualIsAProxy* isa_proxy = new ::TInstrumentedIsAProxy< ::Muon >(0);
       static ::ROOT::TGenericClassInfo 
-         instance("Muon", ::Muon::Class_Version(), "classes/DelphesClasses.h", 320,
+         instance("Muon", ::Muon::Class_Version(), "classes/DelphesClasses.h", 321,
                   typeid(::Muon), ::ROOT::Internal::DefineBehavior(ptr, ptr),
                   &::Muon::Dictionary, isa_proxy, 4,
                   sizeof(::Muon) );
@@ -666,7 +666,7 @@ namespace ROOT {
       ::Jet *ptr = 0;
       static ::TVirtualIsAProxy* isa_proxy = new ::TInstrumentedIsAProxy< ::Jet >(0);
       static ::ROOT::TGenericClassInfo 
-         instance("Jet", ::Jet::Class_Version(), "classes/DelphesClasses.h", 351,
+         instance("Jet", ::Jet::Class_Version(), "classes/DelphesClasses.h", 352,
                   typeid(::Jet), ::ROOT::Internal::DefineBehavior(ptr, ptr),
                   &::Jet::Dictionary, isa_proxy, 4,
                   sizeof(::Jet) );
@@ -698,7 +698,7 @@ namespace ROOT {
       ::Track *ptr = 0;
       static ::TVirtualIsAProxy* isa_proxy = new ::TInstrumentedIsAProxy< ::Track >(0);
       static ::ROOT::TGenericClassInfo 
-         instance("Track", ::Track::Class_Version(), "classes/DelphesClasses.h", 412,
+         instance("Track", ::Track::Class_Version(), "classes/DelphesClasses.h", 413,
                   typeid(::Track), ::ROOT::Internal::DefineBehavior(ptr, ptr),
                   &::Track::Dictionary, isa_proxy, 4,
                   sizeof(::Track) );
@@ -730,7 +730,7 @@ namespace ROOT {
       ::Tower *ptr = 0;
       static ::TVirtualIsAProxy* isa_proxy = new ::TInstrumentedIsAProxy< ::Tower >(0);
       static ::ROOT::TGenericClassInfo 
-         instance("Tower", ::Tower::Class_Version(), "classes/DelphesClasses.h", 474,
+         instance("Tower", ::Tower::Class_Version(), "classes/DelphesClasses.h", 475,
                   typeid(::Tower), ::ROOT::Internal::DefineBehavior(ptr, ptr),
                   &::Tower::Dictionary, isa_proxy, 4,
                   sizeof(::Tower) );
@@ -762,7 +762,7 @@ namespace ROOT {
       ::HectorHit *ptr = 0;
       static ::TVirtualIsAProxy* isa_proxy = new ::TInstrumentedIsAProxy< ::HectorHit >(0);
       static ::ROOT::TGenericClassInfo 
-         instance("HectorHit", ::HectorHit::Class_Version(), "classes/DelphesClasses.h", 503,
+         instance("HectorHit", ::HectorHit::Class_Version(), "classes/DelphesClasses.h", 504,
                   typeid(::HectorHit), ::ROOT::Internal::DefineBehavior(ptr, ptr),
                   &::HectorHit::Dictionary, isa_proxy, 4,
                   sizeof(::HectorHit) );
@@ -794,7 +794,7 @@ namespace ROOT {
       ::Candidate *ptr = 0;
       static ::TVirtualIsAProxy* isa_proxy = new ::TInstrumentedIsAProxy< ::Candidate >(0);
       static ::ROOT::TGenericClassInfo 
-         instance("Candidate", ::Candidate::Class_Version(), "classes/DelphesClasses.h", 527,
+         instance("Candidate", ::Candidate::Class_Version(), "classes/DelphesClasses.h", 528,
                   typeid(::Candidate), ::ROOT::Internal::DefineBehavior(ptr, ptr),
                   &::Candidate::Dictionary, isa_proxy, 4,
                   sizeof(::Candidate) );

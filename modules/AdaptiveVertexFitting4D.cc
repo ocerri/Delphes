@@ -132,6 +132,7 @@ void AdaptiveVertexFitting4D::Process()
       cout << "chi2: " << vtx.chi2 << endl;
       cout << Form("End: {0, 0, %.2f +/- %.2f} mm - %.2f +/- %.2f ps", vtx.z, vtx.sigma_z, vtx.t, vtx.sigma_t) << endl;
     }
+    cluster->Chi2 = vtx.chi2;
 
     cluster->Position.SetT(vtx.t * c_light);
     cluster->PositionError.SetT(vtx.sigma_t * c_light);
@@ -139,14 +140,11 @@ void AdaptiveVertexFitting4D::Process()
     cluster->Position.SetZ(vtx.z);
     cluster->PositionError.SetZ(vtx.sigma_z);
 
-    TIter TrackIt(cluster->GetCandidates());
-    TrackIt.Reset();
-
-    Candidate *tr;
-    while((tr = static_cast<Candidate*>(TrackIt.Next())))
+    for(unsigned int i = 0 ; i < tks.getSize(); i++)
     {
+      Candidate *tr = static_cast<Candidate*>(tks.tt[i]->Clone());;
       tr->InitialPosition.SetT(cluster->Position.T());
-      tr->InitialPosition.SetZ(cluster->Position.Z());
+      tr->InitialPosition.SetZ(tks.z(i, vtx.t));
 
       fOutputArray->Add(tr);
     }
@@ -190,7 +188,7 @@ void AdaptiveVertexFitting4D::fill(Candidate* vtx, tracks_t &tks)
 
     tks.tt.push_back( tr );
 
-    // if(fVerbose > 20) tks.dump(i);
+    if(fVerbose > 20 && vtx->GetCandidates()->GetEntriesFast()< 5) tks.dump(i);
     i++;
   }
 
@@ -213,7 +211,6 @@ void AdaptiveVertexFitting4D::fit(double beta, tracks_t &tks, vertex_t &vtx)
   minuit.SetParameter(1, "t_v", vtx.t, vtx.sigma_t, 5000, -5000);
   global_tks = &tks;
 
-  // minuit.SetPrintLevel(TMath::Sign(1, fVerbose)-1);
   minuit.ExecuteCommand("MIGRAD", new double(0), 0);
 
   vtx.t = minuit.GetParameter(1);
@@ -223,6 +220,28 @@ void AdaptiveVertexFitting4D::fit(double beta, tracks_t &tks, vertex_t &vtx)
   vtx.sigma_z = 1./sqrt(tks.sum_wz);
 
   vtx.chi2 = global_chi2;
+
+  if(fVerbose > 4 && vtx.chi2 < 1.)
+  {
+    for(unsigned int i = 0; i < tks.getSize(); i++)
+    {
+      cout << "z(tv) = " << tks.z(i, vtx.t) << endl;
+      cout << "dz2_(tv) = " << tks.s2z(i, vtx.t) << endl;
+      double aux = c_light * tks.beta_z[i];
+      aux = aux * aux * tks.s2t_out[i];
+      cout << Form("Breakdown : %.2f + %.2f", tks.s2z_out[i], aux) << flush;
+
+      aux = c_light * (vtx.t - tks.t_out[i]) * tks.ctg_theta[i] * ( 1 - tks.Pt[i]*tks.Pt[i]*(1+tks.ctg_theta[i]*tks.ctg_theta[i])/(tks.E[i]*tks.E[i]) ) / tks.E[i];
+      aux = aux*aux*tks.s2_Pt[i];
+      cout << Form("+ %.2f", aux) << endl;
+      cout << "beta_z: " << tks.beta_z[i] << endl;
+      cout << "Mass: " << tks.M[i] << endl;
+      cout << "Energy: " << tks.E[i] << endl;
+      cout << "CtgTheta: " << tks.ctg_theta[i] << endl;
+      cout << Form("Pt: %.3f +/- %.3f ", tks.Pt[i], sqrt(tks.s2_Pt[i])) << endl;
+      cout << "eta: " << tks.tt[i]->Momentum.Eta() << endl;
+    }
+  }
 }
 
 // -----------------------------------------------------------------------------
@@ -243,7 +262,6 @@ void NegativeLogLikelihood(Int_t&, Double_t*, Double_t&f, Double_t*par, Int_t )
   {
     z[i] = global_tks->z(i, t_v);
     wz[i] = 1./global_tks->s2z(i, t_v);
-    // cout << Form("%d: %f +/- %f", i, z[i], sqrt(1./wz[i])) << endl;
 
     global_z_v += wz[i]*z[i];
     global_tks->sum_wz += wz[i];

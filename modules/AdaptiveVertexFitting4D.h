@@ -97,7 +97,7 @@ class AdaptiveVertexFitting4D: public DelphesModule
           out += s2z_out[i];
 
           double aux = c_light * beta_z[i];
-          // out += aux * aux * s2t_out[i];
+          out += aux * aux * s2t_out[i];
 
           aux = c_light * (t - t_out[i]) * ctg_theta[i] * ( 1 - Pt[i]*Pt[i]*(1+ctg_theta[i]*ctg_theta[i])/(E[i]*E[i]) ) / E[i];
           out += aux*aux*s2_Pt[i];
@@ -146,7 +146,7 @@ class AdaptiveVertexFitting4D: public DelphesModule
 
     UInt_t fMaxIterations;
 
-    Float_t fBetaMax;
+    Double_t fBetaMax;
 
     Double_t fCoolingFactor;
     Double_t fChi2_0;

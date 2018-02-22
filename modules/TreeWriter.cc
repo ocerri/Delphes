@@ -244,9 +244,6 @@ void TreeWriter::ProcessVertices(ExRootTreeBranch *branch, TObjArray *array)
 
   const Double_t c_light = 2.99792458E8;
 
-  Double_t sigma, sumPT2, btvSumPT2, genDeltaZ, genSumPT2;
-  UInt_t index, ndf;
-
   CompBase *compare = Candidate::fgCompare;
   Candidate::fgCompare = CompSumPT2<Candidate>::Instance();
   array->Sort();
@@ -256,24 +253,17 @@ void TreeWriter::ProcessVertices(ExRootTreeBranch *branch, TObjArray *array)
   iterator.Reset();
   while((candidate = static_cast<Candidate*>(iterator.Next())))
   {
-
-    index = candidate->ClusterIndex;
-    ndf = candidate->ClusterNDF;
-    sigma = candidate->ClusterSigma;
-    sumPT2 = candidate->SumPT2;
-    btvSumPT2 = candidate->BTVSumPT2;
-    genDeltaZ = candidate->GenDeltaZ;
-    genSumPT2 = candidate->GenSumPT2;
-
     entry = static_cast<Vertex*>(branch->NewEntry());
 
-    entry->Index = index;
-    entry->NDF = ndf;
-    entry->Sigma = sigma;
-    entry->SumPT2 = sumPT2;
-    entry->BTVSumPT2 = btvSumPT2;
-    entry->GenDeltaZ = genDeltaZ;
-    entry->GenSumPT2 = genSumPT2;
+    entry->Index = candidate->ClusterIndex;
+    entry->NDF = candidate->ClusterNDF;
+    entry->Chi2 = candidate->Chi2;
+
+    entry->Sigma = candidate->ClusterSigma;
+    entry->SumPT2 = candidate->SumPT2;
+    entry->BTVSumPT2 = candidate->BTVSumPT2;
+    entry->GenDeltaZ = candidate->GenDeltaZ;
+    entry->GenSumPT2 = candidate->GenSumPT2;
 
     entry->X = candidate->Position.X();;
     entry->Y = candidate->Position.Y();;

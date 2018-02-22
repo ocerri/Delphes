@@ -188,6 +188,7 @@ public:
 
   Int_t Index; // vertex index
   Int_t NDF; // number of degrees of freedom
+  Double_t Chi2;
 
   Double_t Sigma; // vertex position (z component) error
   Double_t SumPT2; // sum pt^2 of tracks attached to the vertex
@@ -619,6 +620,7 @@ public:
 
   Int_t ClusterIndex;
   Int_t ClusterNDF;
+  Double_t Chi2;
   Double_t ClusterSigma;
   Double_t SumPT2;
   Double_t BTVSumPT2;
