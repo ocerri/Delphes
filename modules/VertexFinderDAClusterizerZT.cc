@@ -112,6 +112,9 @@ void VertexFinderDAClusterizerZT::Init()
 
   fVertexOutputArray = ExportArray(GetString("VertexOutputArray", "vertices"));
 
+  fInputGenVtx = ImportArray(GetString("InputGenVtx", "PileUpMerger/vertices"));
+  fItInputGenVtx = fInputGenVtx->MakeIterator();
+
   if(fVerbose)
   {
     cout << setprecision(2) << std::scientific;
@@ -183,7 +186,7 @@ void VertexFinderDAClusterizerZT::Process()
     f->Close();
   }
 
-  if (fVerbose){std::cout <<  " clustering returned  "<< ClusterArray->GetEntriesFast() << " clusters  from " << fInputArray->GetEntriesFast() << " selected tracks" <<std::endl;}
+  if (fVerbose){std::cout <<  " clustering returned  "<< ClusterArray->GetEntriesFast() << " clusters  from " << fInputArray->GetEntriesFast() << " input tracks" <<std::endl;}
 
   // //loop over vertex candidates
   TIterator * ItClusterArray = ClusterArray->MakeIterator();
@@ -293,7 +296,7 @@ void VertexFinderDAClusterizerZT::clusterize(TObjArray &clusters)
       if( fVerbose > 10 ) plot_status(beta, vtx, tks, niter, "Bup");
       if (fVerbose > 3)
       {
-        cout << niter << ": " << delta2 << endl;
+        cout << "Update " << niter << " : " << delta2 << endl;
       }
       niter++;
     }
@@ -502,21 +505,35 @@ void VertexFinderDAClusterizerZT::fill(tracks_t &tks)
 
   double z, t, dz2_o, dt2_o, w;
   double p, e, bz;
+  // DEBUG PURPOSE
+  vector<double> td_true, zd_true;
   fItInputArray->Reset();
 
   while((candidate = static_cast<Candidate*>(fItInputArray->Next())))
   {
+    unsigned int discard = 0;
     z = candidate->DZ; // [mm]
-    if(fabs(z) > 3*fDzCutOff) continue;
+    if(fabs(z) > 3*fDzCutOff) discard = 1;
 
     //Temporary in v0 where the right mass is assumed
+    double M = candidate->Mass;
+    // M = 0.139570;
     p = candidate->Momentum.Pt() * sqrt(1 + candidate->CtgTheta*candidate->CtgTheta);
-    e = sqrt(p*p + candidate->Mass*candidate->Mass);
+    e = sqrt(p*p + M*M);
     bz = candidate->Momentum.Pt() * candidate->CtgTheta/e;
+
     t = candidate->Position.T()*1.E9/c_light; // from [mm] to [ps]
-    if(t < -9999) continue;                    // Means that the time information has not been added
+    if(t <= -9999) discard = 1;                    // Means that the time information has not been added
     t += (z - candidate->Position.Z())*1E9/(c_light*bz);
-    if(fabs(t) > 3*fDtCutOff) continue;
+    if(fabs(t) > 3*fDtCutOff) discard = 1;
+
+    // auto genp = (Candidate*) candidate->GetCandidates()->At(0);
+    // cout << "Eta: " << candidate->Position.Eta() << endl;
+    // cout << genp->Momentum.Pt() << " -- " << candidate->Momentum.Pt() << endl;
+    // cout << genp->Momentum.Pz() << " -- " << candidate->Momentum.Pz() << endl;
+    // cout << genp->Momentum.P() << " -- " << p << endl;
+    // cout << genp->Momentum.E() << " -- " << e << endl;
+    // cout << Form("bz_true: %.4f -- bz_gen: %.4f", genp->Momentum.Pz()/genp->Momentum.E(), bz) << endl;
 
     dz2_o = candidate->ErrorDZ*candidate->ErrorDZ;
     dz2_o += fVertexZSize*fVertexZSize;
@@ -534,27 +551,40 @@ void VertexFinderDAClusterizerZT::fill(tracks_t &tks)
       double d0_sig = candidate->D0/candidate->ErrorD0;
       w = exp(d0_sig*d0_sig - fD0CutOff*fD0CutOff);
       w = 1./(1. + w);
-      if (w < 1E-10) continue;
+      if (w < 1E-10) discard = 1;
     }
     else
     {
       w = 1;
     }
 
-    tks.sum_w_o_dt2 += w * dt2_o;
-    tks.sum_w_o_dz2 += w * dz2_o;
-    tks.sum_w += w;
 
-    tks.addItem(z, t, dz2_o, dt2_o, &(*candidate), w, candidate->PID); //PROVA: rimuovi &(*---)
+    if(discard)
+    {
+      candidate->ClusterIndex = -1;
+      candidate->InitialPosition.SetT(1E3*1000000*c_light);
+      candidate->InitialPosition.SetZ(1E8);
+    }
+    else
+    {
+      tks.sum_w_o_dt2 += w * dt2_o;
+      tks.sum_w_o_dz2 += w * dz2_o;
+      tks.sum_w += w;
+      tks.addItem(z, t, dz2_o, dt2_o, &(*candidate), w, candidate->PID); //PROVA: rimuovi &(*---)
+
+      td_true.push_back(1E9*candidate->Td/c_light);
+      zd_true.push_back(candidate->Zd);
+    }
+
   }
 
   if(fVerbose > 1)
   {
     cout << "----->Filled tracks" << endl;
-    cout << "M        z        dz        t        dt        w" << endl;
+    cout << "M        z           dz        t            dt        w" << endl;
     for(unsigned int i = 0; i < tks.getSize(); i++)
     {
-      cout << Form("%d\t%1.1e\t%1.1e\t%1.1e\t%1.1e\t%1.1e", tks.PID[i], tks.z[i], 1/sqrt(tks.dz2_o[i]), tks.t[i], 1/sqrt(tks.dt2_o[i]), tks.w[i]) << endl;
+      cout << Form("%d\t%1.1e(%1.1e)\t%1.1e\t%1.1e(%1.1e)\t%1.1e\t%1.1e", tks.PID[i], tks.z[i], zd_true[i], 1/sqrt(tks.dz2_o[i]), tks.t[i], td_true[i], 1/sqrt(tks.dt2_o[i]), tks.w[i]) << endl;
     }
   }
 
@@ -747,7 +777,7 @@ bool VertexFinderDAClusterizerZT::split(double &beta, vertex_t &vtx, tracks_t & 
 {
   bool split = false;
 
-  auto pair_bc_k = vtx.ComputeAllBeta_c();
+  auto pair_bc_k = vtx.ComputeAllBeta_c(fVerbose);
 
   // If minimum beta_c is higher than beta, no split is necessaire
   if( pair_bc_k.first > beta )
@@ -1070,6 +1100,8 @@ void VertexFinderDAClusterizerZT::plot_status(double beta, vertex_t &vtx, tracks
   gr_PVtks->GetYaxis()->SetTitle("z CA [mm]");
   gr_PVtks->GetYaxis()->SetRangeUser(z_min, z_max);
   gr_PVtks->SetMarkerStyle(4);
+  gr_PVtks->SetMarkerColor(8);
+  gr_PVtks->SetLineColor(8);
   gr_PVtks->Draw("APE1");
 
   TGraphErrors* gr_PUtks = new TGraphErrors(t_PU.size(), &t_PU[0], &z_PU[0], &dt_PU[0], &dz_PU[0]);
@@ -1081,6 +1113,20 @@ void VertexFinderDAClusterizerZT::plot_status(double beta, vertex_t &vtx, tracks
   gr_vtx->SetMarkerColor(2);
   gr_vtx->SetMarkerSize(2.);
   gr_vtx->Draw("PE1");
+
+  fItInputGenVtx->Reset();
+  TGraph* gr_genvtx = new TGraph(fInputGenVtx->GetEntriesFast());
+  Candidate *candidate;
+  unsigned int k = 0;
+  while((candidate = static_cast<Candidate*>(fItInputGenVtx->Next())))
+  {
+    gr_genvtx->SetPoint(k, candidate->Position.T()*1E9/c_light, candidate->Position.Z());
+    k++;
+  }
+  gr_genvtx->SetMarkerStyle(33);
+  gr_genvtx->SetMarkerColor(6);
+  gr_genvtx->SetMarkerSize(2.);
+  gr_genvtx->Draw("PE1");
 
   // auto leg = new TLegend(0.1, 0.1);
   // leg->AddEntry(gr_PVtks, "PV tks", "ep");
@@ -1131,14 +1177,14 @@ void VertexFinderDAClusterizerZT::plot_status_end(vertex_t &vtx, tracks_t &tks)
     gr->SetMarkerStyle(marker);
 
     int idx = tks.tt[i]->ClusterIndex;
-    int color = idx>0 ? MyPalette[idx] : 16;
+    int color = idx>=0 ? MyPalette[idx] : 16;
     gr->SetMarkerColor(color);
     gr->SetLineColor(color);
 
-    int line_style = idx>0 ? 1 : 3;
+    int line_style = idx>=0 ? 1 : 3;
     gr->SetLineStyle(line_style);
 
-    if(i==1)
+    if(i==0)
     {
       gr->SetTitle(Form("Clustering space - Tot Vertexes = %d", nv));
       gr->GetXaxis()->SetTitle("t CA [ps]");
@@ -1158,11 +1204,25 @@ void VertexFinderDAClusterizerZT::plot_status_end(vertex_t &vtx, tracks_t &tks)
     gr->SetNameTitle(Form("grv%d",k), Form("grv%d",k));
 
     gr->SetMarkerStyle(41);
-    gr->SetMarkerSize(2);
+    gr->SetMarkerSize(4);
     gr->SetMarkerColor(MyPalette[k]);
 
     gr->Draw("P");
   }
+
+  fItInputGenVtx->Reset();
+  TGraph* gr_genvtx = new TGraph(fInputGenVtx->GetEntriesFast());
+  Candidate *candidate;
+  unsigned int k = 0;
+  while((candidate = static_cast<Candidate*>(fItInputGenVtx->Next())))
+  {
+    gr_genvtx->SetPoint(k, candidate->Position.T()*1E9/c_light, candidate->Position.Z());
+    k++;
+  }
+  gr_genvtx->SetMarkerStyle(33);
+  gr_genvtx->SetMarkerColor(6);
+  gr_genvtx->SetMarkerSize(2.);
+  gr_genvtx->Draw("PE1");
 
   c_out->SetGrid();
   c_out->SaveAs(Form("~/Desktop/debug/c_final.png"));

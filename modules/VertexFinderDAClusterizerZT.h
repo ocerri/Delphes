@@ -164,7 +164,7 @@ class VertexFinderDAClusterizerZT: public DelphesModule
           return k_min;
         }
 
-        std::pair<double, unsigned int> ComputeAllBeta_c()
+        std::pair<double, unsigned int> ComputeAllBeta_c(unsigned int verbose = 0)
         {
           unsigned int nv = getSize();
           unsigned int k_min = 0;
@@ -173,8 +173,12 @@ class VertexFinderDAClusterizerZT: public DelphesModule
           {
             if(szz[k] == 0 || stt[k] == 0)
             {
-              std::cout << std::endl << Form("%d:  t=%1.2e, z=%1.2e, pk=%1.2e, szz=%1.2e, stt=%1.2e, stz=%1.2e", k, t[k], z[k], pk[k], szz[k], stt[k], stz[k]);
-              throw std::invalid_argument( "Attempting to compute beta c for uninitialized vertex" );
+              beta_c[k] = 1000;
+              if(verbose>5)
+              {
+                std::cout << std::endl << Form("Varianca too small! beta_c set to 1000\nVertex %d:  t=%1.2e, z=%1.2e, pk=%1.2e, szz=%1.2e, stt=%1.2e, stz=%1.2e", k, t[k], z[k], pk[k], szz[k], stt[k], stz[k]);
+                // throw std::invalid_argument( "Attempting to compute beta c for uninitialized vertex" );
+              }
             }
 
             double aux = (stt[k] - szz[k])*(stt[k] - szz[k]) + 4*stz[k]*stz[k];
@@ -235,7 +239,7 @@ class VertexFinderDAClusterizerZT: public DelphesModule
 
   private:
 
-    UInt_t fVerbose;
+    unsigned int fVerbose;
 
     UInt_t fMaxIterations;
     UInt_t fMaxVertexNumber;
@@ -272,6 +276,11 @@ class VertexFinderDAClusterizerZT: public DelphesModule
     std::vector<double> fEnergy_rec;
     std::vector<double> fBeta_rec;
     std::vector<double> fNvtx_rec;
+
+    // Debug purpose only
+    TObjArray *fInputGenVtx;
+    TIterator *fItInputGenVtx;
+
 
 };
 

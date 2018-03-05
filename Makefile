@@ -17,7 +17,7 @@ PcmSuf = _rdict.pcm
 CXXFLAGS += $(ROOTCFLAGS) -Wno-write-strings -D_FILE_OFFSET_BITS=64 -DDROP_CGAL -I. -Iexternal -Iexternal/tcl
 LIBS = -lRooFitCore -lRooFit -lMinuit -lHtml -lPyROOT -lFoam -lRooStats -lTreePlayer -lTMVA
 DELPHES_LIBS = $(shell $(RC) --libs) -lEG $(SYSLIBS) $(LIBS)
-DISPLAY_LIBS = $(shell $(RC) --evelibs) -lGuiHtml $(SYSLIBS)
+DISPLAY_LIBS = $(shell $(RC) --evelibs) -lGuiHtml $(SYSLIBS) $(LIBS)
 
 ifneq ($(CMSSW_FWLITE_INCLUDE_PATH),)
 HAS_CMSSW = true

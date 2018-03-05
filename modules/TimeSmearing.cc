@@ -106,11 +106,11 @@ void TimeSmearing::Process()
     tf = candidateFinalPosition.T()*1.0E-3/c_light;
 
     // apply smearing formula
-    if(fabs(candidateFinalPosition.Eta())<3)
+    if(fabs(candidateFinalPosition.Eta())<2.4)
     {
       tf_smeared = tf + fTimeResolution*gRandom->Gaus(0, 1);
     }
-    else tf_smeared = -9999;
+    else continue;
 
     double beta_particle = candidate->Momentum.P()/candidate->Momentum.E();
     ti = tf_smeared - candidate->Ld*1.0E-3/(c_light*beta_particle);
