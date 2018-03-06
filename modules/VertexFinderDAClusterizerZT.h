@@ -257,6 +257,8 @@ class VertexFinderDAClusterizerZT: public DelphesModule
     Double_t fDzCutOff;
     Double_t fD0CutOff;
     Double_t fDtCutOff;
+    Double_t fPtMin;
+    Double_t fPtMax;
 
     Double_t fD2UpdateLim;
     Double_t fD2Merge;

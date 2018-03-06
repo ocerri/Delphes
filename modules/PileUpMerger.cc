@@ -21,6 +21,7 @@
  *  Merges particles from pile-up sample into event
  *
  *  \author M. Selvaggi - UCL, Louvain-la-Neuve
+ *  \author O. Cerri - Caltech, Pasadena
  *
  */
 
@@ -83,8 +84,6 @@ void PileUpMerger::Init()
 
   fInputBeamSpotX = GetDouble("InputBeamSpotX", 0.0);
   fInputBeamSpotY = GetDouble("InputBeamSpotY", 0.0);
-  fOutputBeamSpotX = GetDouble("OutputBeamSpotX", 0.0);
-  fOutputBeamSpotY = GetDouble("OutputBeamSpotY", 0.0);
 
   // read vertex smearing formula
 
@@ -132,33 +131,32 @@ void PileUpMerger::Process()
   // --- Deal with primary vertex first  ------
 
   fFunction->GetRandom2(dz, dt);
+  dz *= 1.0E3; // necessary in order to make z in mm
+  dt *= c_light*1.0E3; // necessary in order to make t in mm/c
+
   if(fVerbose)
   {
     cout << "-------------PU Merger---------------------" << endl;
-    cout << setprecision(3) << "PV position: z=" << dz*1E3 << " , t=" << dt*1E12 << endl;
+    cout << Form("PV position: z=%.3f mm, t=%.0f ps", dz, dt*1E9/c_light) << endl;
   }
-
-  dt *= c_light*1.0E3; // necessary in order to make t in mm/c
-  dz *= 1.0E3; // necessary in order to make z in mm
-
-  //cout<<dz<<","<<dt<<endl;
 
   vx = 0.0;
   vy = 0.0;
-
-  numberOfParticles = fInputArray->GetEntriesFast();
   nch = 0;
   sumpt2 = 0.0;
 
   factory = GetFactory();
   vertex = factory->NewCandidate();
 
+  numberOfParticles = fInputArray->GetEntriesFast();
   while((candidate = static_cast<Candidate*>(fItInputArray->Next())))
   {
+    double pt2 = candidate->Momentum.Pt() * candidate->Momentum.Pt();
+    vx += candidate->Position.X() * pt2;
+    vy += candidate->Position.Y() * pt2;
     z = candidate->Position.Z();
     t = candidate->Position.T();
 
-    // cancel any possible offset in position and time the input file
     candidate->Position.SetZ(z + dz);
     candidate->Position.SetT(t + dt);
 
@@ -168,18 +166,23 @@ void PileUpMerger::Process()
 
     if(TMath::Abs(candidate->Charge) >  1.0E-9)
     {
-      sumpt2 += candidate->Momentum.Pt() * candidate->Momentum.Pt();
+      sumpt2 += pt2;
       nch++;
       vertex->AddCandidate(candidate);
     }
   }
 
   nvtx++;
-  vertex->Position.SetXYZT(0, 0, dz, dt);
-  vertex->PositionError.SetXYZT(0,0,0,0);
   vertex->ClusterIndex = nvtx;
+  if(sumpt2 > 0)
+  {
+    vx /= sumpt2;
+    vy /= sumpt2;
+  }
+  vertex->Position.SetXYZT(vx, vy, dz, dt);
+  vertex->PositionError.SetXYZT(0,0,0,0);
   vertex->ClusterNDF = nch;
-  vertex->SumPT2 = sumpt2;
+  vertex->SumPT2 = -1;
   vertex->GenSumPT2 = sumpt2;
   fVertexOutputArray->Add(vertex);
 
@@ -204,6 +207,7 @@ void PileUpMerger::Process()
   allEntries = fReader->GetEntries();
 
 
+  // --- Pile-up vertex smearing--------------------
   for(event = 0; event < numberOfEvents; ++event)
   {
     do
@@ -214,26 +218,23 @@ void PileUpMerger::Process()
 
     fReader->ReadEntry(entry);
 
-   // --- Pile-up vertex smearing
 
     fFunction->GetRandom2(dz, dt);
+    dz *= 1.0E3; // necessary in order to make z in mm
+    dt *= c_light*1.0E3; // necessary in order to make t in mm/c
     if(fVerbose)
     {
-      cout << setprecision(3) << "PU position: z=" << dz*1E3 << " , t=" << dt*1E12 << endl;
+      cout << Form("PV position: z=%.3f mm, t=%.0f ps", dz, dt*1E9/c_light) << endl;
     }
-
-    dt *= c_light*1.0E3; // necessary in order to make t in mm/c
-    dz *= 1.0E3; // necessary in order to make z in mm
 
     dphi = gRandom->Uniform(-TMath::Pi(), TMath::Pi());
 
     vx = 0.0;
     vy = 0.0;
-
     numberOfParticles = 0;
     sumpt2 = 0.0;
+    nch = 0;
 
-    //factory = GetFactory();
     vertex = factory->NewCandidate();
 
     while(fReader->ReadParticle(pid, x, y, z, t, px, py, pz, e))
@@ -245,8 +246,8 @@ void PileUpMerger::Process()
       candidate->Status = 1;
 
       pdgParticle = pdg->GetParticle(pid);
-      candidate->Charge = pdgParticle ? Int_t(pdgParticle->Charge()/3.0) : -999;
-      candidate->Mass = pdgParticle ? pdgParticle->Mass() : -999.9;
+      candidate->Charge = pdgParticle ? Int_t(pdgParticle->Charge()/3.0) : -1E6;
+      candidate->Mass = pdgParticle ? pdgParticle->Mass() : -1E6;
 
       candidate->IsPU = 1;
 
@@ -258,10 +259,9 @@ void PileUpMerger::Process()
       y -= fInputBeamSpotY;
       candidate->Position.SetXYZT(x, y, z + dz, t + dt);
       candidate->Position.RotateZ(dphi);
-      candidate->Position += TLorentzVector(fOutputBeamSpotX, fOutputBeamSpotY, 0.0, 0.0);
 
-      vx += candidate->Position.X();
-      vy += candidate->Position.Y();
+      vx += x*pt*pt;
+      vy += y*pt*pt;
 
       ++numberOfParticles;
       if(TMath::Abs(candidate->Charge) >  1.0E-9)
@@ -274,23 +274,18 @@ void PileUpMerger::Process()
       fParticleOutputArray->Add(candidate);
     }
 
-    if(numberOfParticles > 0)
+    if(sumpt2 > 0)
     {
-      vx /= numberOfParticles;
-      vy /= numberOfParticles;
+      vx /= sumpt2;
+      vy /= sumpt2;
     }
 
     nvtx++;
-
-    // Add Olmo
-    vx = 0;
-    vy = 0;
-
     vertex->Position.SetXYZT(vx, vy, dz, dt);
 
     vertex->ClusterIndex = nvtx;
     vertex->ClusterNDF = nch;
-    vertex->SumPT2 = sumpt2;
+    vertex->SumPT2 = -1;
     vertex->GenSumPT2 = sumpt2;
 
     vertex->IsPU = 1;
@@ -299,5 +294,3 @@ void PileUpMerger::Process()
 
   }
 }
-
-//------------------------------------------------------------------------------
