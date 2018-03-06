@@ -269,7 +269,7 @@ class VertexFinderDAClusterizerZT: public DelphesModule
     TObjArray *fInputArray;
     TIterator *fItInputArray;
 
-    TObjArray *fOutputArray;
+    TObjArray *fTrackOutputArray;
     TObjArray *fVertexOutputArray;
 
     ClassDef(VertexFinderDAClusterizerZT, 1)

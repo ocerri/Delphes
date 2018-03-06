@@ -89,8 +89,8 @@ void VertexFinderDAClusterizerZT::Init()
   fMaxVertexNumber = GetInt("MaxVertexNumber", 500);
 
   fBetaMax         = GetDouble("BetaMax", 1.);
-  fBetaPurge       = GetDouble("BetaPurge", 0.5);
-  fBetaStop        = GetDouble("BetaStop", 0.2);
+  fBetaPurge       = GetDouble("BetaPurge", 0.7);
+  fBetaStop        = GetDouble("BetaStop", 0.5);
 
   fVertexZSize     = GetDouble("VertexZSize", 0.1); //in mm
   fVertexTSize     = 1E12*GetDouble("VertexTimeSize", 20E-12); //Convert from [s] to [ps]
@@ -104,15 +104,16 @@ void VertexFinderDAClusterizerZT::Init()
   fPtMax           = GetDouble("PtMax", 50);        // Maximum pt accepted for tracks
 
 
-  fD2UpdateLim     = GetDouble("D2UpdateLim", .2);   // ((dz/ZSize)^2+(dt/TSize)^2)/nv limit for merging vertices
+  fD2UpdateLim     = GetDouble("D2UpdateLim", .5);   // ((dz/ZSize)^2+(dt/TSize)^2)/nv limit for merging vertices
   fD2Merge         = GetDouble("D2Merge", 4.0);      // (dz/ZSize)^2+(dt/TSize)^2 limit for merging vertices
   fSplittingSize   = GetDouble("SplittingSize", 10); // Size of the perturbation when splitting
   fMuOutlayer      = GetDouble("MuOutlayer", 4);     // Outlayer rejection exponent
-  fMinTrackProb    = GetDouble("fMinTrackProb", 0.5);     // Outlayer rejection exponent
+  fMinTrackProb    = GetDouble("fMinTrackProb", 0.6);     // Outlayer rejection exponent
 
   fInputArray = ImportArray(GetString("InputArray", "TrackSmearing/tracks"));
   fItInputArray = fInputArray->MakeIterator();
 
+  fTrackOutputArray = ExportArray(GetString("TrackOutputArray", "tracks"));
   fVertexOutputArray = ExportArray(GetString("VertexOutputArray", "vertices"));
 
   fInputGenVtx = ImportArray(GetString("InputGenVtx", "PileUpMerger/vertices"));
@@ -478,6 +479,7 @@ void VertexFinderDAClusterizerZT::clusterize(TObjArray &clusters)
       tks.tt[i]->InitialPosition.SetT(1E3*1000000*c_light);
       tks.tt[i]->InitialPosition.SetZ(1E8);
     }
+    fTrackOutputArray->Add(tks.tt[i]);
   }
 
   if(fVerbose > 10) plot_status_end(vtx, tks);
@@ -566,6 +568,7 @@ void VertexFinderDAClusterizerZT::fill(tracks_t &tks)
       candidate->ClusterIndex = -1;
       candidate->InitialPosition.SetT(1E3*1000000*c_light);
       candidate->InitialPosition.SetZ(1E8);
+      fTrackOutputArray->Add(candidate);
     }
     else
     {
@@ -717,36 +720,45 @@ double VertexFinderDAClusterizerZT::update(double beta, tracks_t &tks, vertex_t 
       sum_pzz += wzz;
       sum_ptz += wtz;
     }
-    pk_new /= tks.sum_w;
-    sum_pk += pk_new;
-
-    stt /= sum_ptt;
-    szz /= sum_pzz;
-    stz /= sum_ptz;
-
-    double new_t = sw_t/sum_wt;
-    double new_z = sw_z/sum_wz;
-    if(isnan(new_z) || isnan(new_t))
+    if(pk_new == 0)
     {
-      cout << endl << endl;
-      cout << Form("t: %.3e   /   %.3e", sw_t, sum_wt) << endl;
-      cout << Form("z: %.3e   /   %.3e", sw_z, sum_wz) << endl;
-      cout << "pk " << k << "  " << vtx.pk[k] << endl;
-      throw std::invalid_argument("new_z is nan");
+      vtx.removeItem(k);
+      k--;
+      // throw std::invalid_argument(Form("pk_new is %.8f", pk_new));
     }
+    else
+    {
+      pk_new /= tks.sum_w;
+      sum_pk += pk_new;
 
-    double z_displ = (new_z - vtx.z[k])/fVertexZSize;
-    double t_displ = (new_t - vtx.t[k])/fVertexTSize;
-    double delta2 = z_displ*z_displ + t_displ*t_displ;
+      stt /= sum_ptt;
+      szz /= sum_pzz;
+      stz /= sum_ptz;
 
-    if (delta2 > delta2_max) delta2_max =  delta2;
+      double new_t = sw_t/sum_wt;
+      double new_z = sw_z/sum_wz;
+      if(isnan(new_z) || isnan(new_t))
+      {
+        cout << endl << endl;
+        cout << Form("t: %.3e   /   %.3e", sw_t, sum_wt) << endl;
+        cout << Form("z: %.3e   /   %.3e", sw_z, sum_wz) << endl;
+        cout << "pk " << k << "  " << vtx.pk[k] << endl;
+        throw std::invalid_argument("new_z is nan");
+      }
 
-    vtx.z[k] = new_z;
-    vtx.t[k] = new_t;
-    vtx.pk[k] = pk_new;
-    vtx.szz[k] = szz;
-    vtx.stt[k] = stt;
-    vtx.stz[k] = stz;
+      double z_displ = (new_z - vtx.z[k])/fVertexZSize;
+      double t_displ = (new_t - vtx.t[k])/fVertexTSize;
+      double delta2 = z_displ*z_displ + t_displ*t_displ;
+
+      if (delta2 > delta2_max) delta2_max =  delta2;
+
+      vtx.z[k] = new_z;
+      vtx.t[k] = new_t;
+      vtx.pk[k] = pk_new;
+      vtx.szz[k] = szz;
+      vtx.stt[k] = stt;
+      vtx.stz[k] = stz;
+    }
   }
 
   if(fabs((sum_pk - 1.) > 1E-4))
@@ -806,7 +818,7 @@ bool VertexFinderDAClusterizerZT::split(double &beta, vertex_t &vtx, tracks_t & 
         // Compute splitting direction: given by the max eighenvalue eighenvector
         double zn = (vtx.szz[k] - vtx.stt[k])*(vtx.szz[k] - vtx.stt[k]) + 4*vtx.stz[k]*vtx.stz[k];
         zn = vtx.szz[k] - vtx.stt[k] + sqrt(zn);
-        double tn = -2*vtx.stz[k];
+        double tn = 2*vtx.stz[k];
         double norm = hypot(zn, tn);
         tn /= norm;
         zn /= norm;
@@ -857,21 +869,23 @@ bool VertexFinderDAClusterizerZT::split(double &beta, vertex_t &vtx, tracks_t & 
         }
         else
         {
-          double aux_slope = zn/tn;
-          double delta = epsilon/sqrt(1+aux_slope*aux_slope); //in the measure sqrt((dz/sz)^2 + (dt/st)^2)
-
-          if( fVerbose > 3 )
-          {
-            cout << aux_slope << "   delta = " << delta << endl;
-          }
-
-          double t_displ = delta * fVertexTSize;
-          double z_displ = aux_slope * delta * fVertexZSize;
-
-          t1 = t_old + t_displ;
-          z1 = z_old + z_displ;
-          t2 = t_old - t_displ;
-          z2 = z_old - z_displ;
+          throw std::invalid_argument( "0 division" );
+          // cout << "Something worng" << endl;
+          // double aux_slope = zn/tn;
+          // double delta = epsilon/sqrt(1+aux_slope*aux_slope); //in the measure sqrt((dz/sz)^2 + (dt/st)^2)
+          //
+          // if( fVerbose > 3 )
+          // {
+          //   cout << aux_slope << "   delta = " << delta << endl;
+          // }
+          //
+          // double t_displ = delta * fVertexTSize;
+          // double z_displ = aux_slope * delta * fVertexZSize;
+          //
+          // t1 = t_old + t_displ;
+          // z1 = z_old + z_displ;
+          // t2 = t_old - t_displ;
+          // z2 = z_old - z_displ;
         }
 
         while(vtx.NearestCluster(t1, z1) != k || vtx.NearestCluster(t2, z2) != k)
@@ -889,11 +903,11 @@ bool VertexFinderDAClusterizerZT::split(double &beta, vertex_t &vtx, tracks_t & 
           split = true;
           vtx.t[k] = t1;
           vtx.z[k] = z1;
-          vtx.pk[k] = p1 * vtx.pk[k]/(p1+p2);
+          vtx.pk[k] = p1 * pk_old/(p1+p2);
 
           double new_t = t2;
           double new_z = z2;
-          double new_pk = p2 * vtx.pk[k]/(p1+p2);
+          double new_pk = p2 * pk_old/(p1+p2);
 
           vtx.addItem(new_z, new_t, new_pk);
 

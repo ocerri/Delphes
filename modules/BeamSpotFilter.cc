@@ -1,6 +1,6 @@
 /** \class BeamSpotFilter
  *
- *  Extracts beam spot 
+ *  Extracts beam spot
  *
  *  \author Michele Selvaggi
  *
@@ -49,7 +49,7 @@ BeamSpotFilter::~BeamSpotFilter()
 
 void BeamSpotFilter::Init()
 {
- 
+
   // import input array
   fInputArray = ImportArray(GetString("InputArray", "Delphes/allParticles"));
   fItInputArray = fInputArray->MakeIterator();
@@ -72,14 +72,12 @@ void BeamSpotFilter::Process()
 {
   Candidate *candidate;
   Bool_t passed = false;
-  
+
   fItInputArray->Reset();
   while((candidate = static_cast<Candidate*>(fItInputArray->Next())) && !passed)
   {
     if(candidate->IsPU == 0) passed = true;
     fOutputArray->Add(candidate);
   }
-  
-}
 
- 
+}
