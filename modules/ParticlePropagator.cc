@@ -86,7 +86,6 @@ void ParticlePropagator::Init()
     return;
   }
 
-  fRadiusMax = GetDouble("RadiusMax", fRadius);
   fHalfLengthMax = GetDouble("HalfLengthMax", fHalfLength);
 
   // import array with output from filter/classifier module
@@ -122,78 +121,65 @@ void ParticlePropagator::Finish()
 
 void ParticlePropagator::Process()
 {
-  Candidate *candidate, *mother;
-  TLorentzVector candidatePosition, candidateMomentum, beamSpotPosition;
-  Double_t px, py, pz, pt, pt2, e, q;
-  Double_t x, y, z, t, r, phi;
-  Double_t x_c, y_c, r_c, phi_0;
-  Double_t x_t, y_t, z_t, r_t;
+  cout << "----- Event -----" << endl;
+  Candidate *candidate;
+  Double_t t;
+  Double_t x_t, y_t, z_t;
   Double_t t1, t2, t3, t4, t5, t6;
   Double_t t_z, t_r, t_ra, t_rb;
   Double_t tmp, discr, discr2;
-  Double_t delta, gammam, omega, asinrho;
+  Double_t delta, asinrho;
   Double_t xd, yd, zd, td, phid;
   Double_t l, ld, d0, dz, p, ctgTheta, etap, vz;
-  Double_t bsx, bsy, bsz;
 
   const Double_t c_light = 2.99792458E8;
 
-  if (!fBeamSpotInputArray || fBeamSpotInputArray->GetSize () == 0)
-    beamSpotPosition.SetXYZT(0.0, 0.0, 0.0, 0.0);
-  else
-  {
-    Candidate &beamSpotCandidate = *((Candidate *) fBeamSpotInputArray->At(0));
-    beamSpotPosition = beamSpotCandidate.Position;
-  }
+  // // Not used for the moment
+  // TLorentzVector beamSpotPosition;
+  // if (!fBeamSpotInputArray || fBeamSpotInputArray->GetSize () == 0)
+  //   beamSpotPosition.SetXYZT(0.0, 0.0, 0.0, 0.0);
+  // else
+  // {
+  //   Candidate &beamSpotCandidate = *((Candidate *) fBeamSpotInputArray->At(0));
+  //   beamSpotPosition = beamSpotCandidate.Position;
+  // }
+  // Double_t bsx = beamSpotPosition.X()*1.0E-3;
+  // Double_t bsy = beamSpotPosition.Y()*1.0E-3;
+  // Double_t bsz = beamSpotPosition.Z()*1.0E-3;
 
   fItInputArray->Reset();
   while((candidate = static_cast<Candidate*>(fItInputArray->Next())))
   {
-    candidatePosition = candidate->Position;
-    candidateMomentum = candidate->Momentum;
-    x = candidatePosition.X()*1.0E-3;
-    y = candidatePosition.Y()*1.0E-3;
-    z = candidatePosition.Z()*1.0E-3;
-
-    bsx = beamSpotPosition.X()*1.0E-3;
-    bsy = beamSpotPosition.Y()*1.0E-3;
-    bsz = beamSpotPosition.Z()*1.0E-3;
-
-    q = candidate->Charge;
+    TLorentzVector candidatePosition = candidate->Position;
+    TLorentzVector candidateMomentum = candidate->Momentum;
+    Double_t x = candidatePosition.X()*1.0E-3;
+    Double_t y = candidatePosition.Y()*1.0E-3;
+    Double_t z = candidatePosition.Z()*1.0E-3;
 
     // check that particle position is inside the cylinder
-    if(TMath::Hypot(x, y) > fRadiusMax || TMath::Abs(z) > fHalfLengthMax)
+    if(TMath::Hypot(x, y) > fRadius || TMath::Abs(z) > fHalfLengthMax)
     {
+      cout << "Warning: particle produced outside the detector" << endl;
+      cout << candidate->PID << endl;
+      cout << candidate->Momentum.Eta() << endl;
       continue;
     }
 
-    px = candidateMomentum.Px();
-    py = candidateMomentum.Py();
-    pz = candidateMomentum.Pz();
-    pt = candidateMomentum.Pt();
-    pt2 = candidateMomentum.Perp2();
-    e = candidateMomentum.E();
+    Double_t q = candidate->Charge;
+
+    Double_t px = candidateMomentum.Px();
+    Double_t py = candidateMomentum.Py();
+    Double_t pz = candidateMomentum.Pz();
+    Double_t pt = candidateMomentum.Pt();
+    Double_t pt2 = candidateMomentum.Perp2();
+    Double_t e = candidateMomentum.E();
 
     if(pt2 < 1.0E-9)
     {
       continue;
     }
 
-    if(TMath::Hypot(x, y) > fRadius || TMath::Abs(z) > fHalfLength)
-    {
-      mother = candidate;
-      candidate = static_cast<Candidate*>(candidate->Clone());
-
-      candidate->InitialPosition = candidatePosition;
-      candidate->Position = candidatePosition;
-      candidate->L = 0.0;
-
-      candidate->Momentum = candidateMomentum;
-      candidate->AddCandidate(mother);
-
-      fOutputArray->Add(candidate);
-    }
-    else if(TMath::Abs(q) < 1.0E-9 || TMath::Abs(fBz) < 1.0E-9)
+    if(TMath::Abs(q) < 1.0E-9 || TMath::Abs(fBz) < 1.0E-9)
     {
       // solve pt2*t^2 + 2*(px*x + py*y)*t - (fRadius2 - x*x - y*y) = 0
       tmp = px*y - py*x;
@@ -225,7 +211,7 @@ void ParticlePropagator::Process()
 
       l = TMath::Sqrt( (x_t - x)*(x_t - x) + (y_t - y)*(y_t - y) + (z_t - z)*(z_t - z));
 
-      mother = candidate;
+      Candidate* mother = candidate;
       candidate = static_cast<Candidate*>(candidate->Clone());
 
       candidate->InitialPosition = candidatePosition;
@@ -259,17 +245,17 @@ void ParticlePropagator::Process()
       //     gyration frequency omega = q/(gamma m) fBz
       //     helix radius r = p_{T0} / (omega gamma m)
 
-      gammam = e*1.0E9 / (c_light*c_light);      // gammam in [eV/c^2]
-      omega = q * fBz / (gammam);                // omega is here in [89875518/s]
-      r = pt / (q * fBz) * 1.0E9/c_light;        // in [m]
+      Double_t gammam = e*1.0E9 / (c_light*c_light);      // gammam in [eV/c^2]
+      Double_t omega = q * fBz / (gammam);                // omega is here in [89875518/s]
+      Double_t r = pt / (q * fBz) * 1.0E9/c_light;        // in [m]
 
-      phi_0 = TMath::ATan2(py, px); // [rad] in [-pi, pi]
+      Double_t phi_0 = TMath::ATan2(py, px); // [rad] in [-pi, pi]
 
       // 2. helix axis coordinates
-      x_c = x + r*TMath::Sin(phi_0);
-      y_c = y - r*TMath::Cos(phi_0);
-      r_c = TMath::Hypot(x_c, y_c);
-      phi = TMath::ATan2(y_c, x_c);
+      Double_t x_c = x + r*TMath::Sin(phi_0);
+      Double_t y_c = y - r*TMath::Cos(phi_0);
+      Double_t r_c = TMath::Hypot(x_c, y_c);
+      Double_t phi = TMath::ATan2(y_c, x_c);
       if(x_c < 0.0) phi += TMath::Pi();
 
       //Find the time of closest approach
@@ -340,14 +326,24 @@ void ParticlePropagator::Process()
         t_rb = TMath::Min(t4, TMath::Min(t5, t6));
         t_r = TMath::Min(t_ra, t_rb);
         t = TMath::Min(t_r, t_z);
+        if(t<4E-9)
+        {
+          cout << "there we are" << endl;
+          cout << "tz: " << t_z << endl;
+          cout << "t1: " << t1 << endl;
+          cout << "t2: " << t2 << endl;
+          cout << "t3: " << t3 << endl;
+          cout << "t4: " << t4 << endl;
+          cout << "t5: " << t5 << endl;
+          cout << "t6: " << t6 << endl;
+        }
       }
+
 
       // 4. position in terms of x(t), y(t), z(t)
       x_t = x_c + r * TMath::Sin(omega * t - phi_0);
       y_t = y_c + r * TMath::Cos(omega * t - phi_0);
       z_t = z + pz*1.0E9 / c_light / gammam * t;
-      r_t = TMath::Hypot(x_t, y_t);
-
 
       // compute path length for an helix
       vz = pz*1.0E9 / c_light / gammam;
@@ -356,50 +352,48 @@ void ParticlePropagator::Process()
       //lenght of the path from closest approach to z axis to tracker`
       ld = (t-td) * TMath::Sqrt(vz*vz + r*r*omega*omega);
 
-      if(r_t > 0.0)
+
+      // store these variables before cloning
+      candidate->D0 = d0*1.0E3;
+      candidate->DZ = dz*1.0E3;
+      candidate->P  = p;
+      candidate->PT = pt;
+      //Momentum variables at closest approach
+      candidate->CtgTheta = ctgTheta;
+      candidate->Phi = phid;
+
+      Candidate* mother = candidate;
+      candidate = static_cast<Candidate*>(candidate->Clone());
+
+      candidate->InitialPosition = candidatePosition;
+      candidate->Position.SetXYZT(x_t*1.0E3, y_t*1.0E3, z_t*1.0E3, candidatePosition.T() + t*c_light*1.0E3);
+
+      //Momentum at closest approach
+      candidate->Momentum = candidateMomentum;
+
+      candidate->L = l*1.0E3;
+      candidate->Ld = ld*1.0E3;
+
+      candidate->Xd = xd*1.0E3;
+      candidate->Yd = yd*1.0E3;
+      candidate->Zd = zd*1.0E3;
+      candidate->Td = candidatePosition.T() + td*c_light*1.0E3;
+
+      candidate->AddCandidate(mother);
+
+      fOutputArray->Add(candidate);
+      switch(TMath::Abs(candidate->PID))
       {
-
-        // store these variables before cloning
-        candidate->D0 = d0*1.0E3;
-        candidate->DZ = dz*1.0E3;
-        candidate->P  = p;
-        candidate->PT = pt;
-        //Momentum variables at closest approach
-        candidate->CtgTheta = ctgTheta;
-        candidate->Phi = phid;
-
-        mother = candidate;
-        candidate = static_cast<Candidate*>(candidate->Clone());
-
-        candidate->InitialPosition = candidatePosition;
-        candidate->Position.SetXYZT(x_t*1.0E3, y_t*1.0E3, z_t*1.0E3, candidatePosition.T() + t*c_light*1.0E3);
-
-        //Momentum at closest approach
-        candidate->Momentum = candidateMomentum;
-
-        candidate->L = l*1.0E3;
-        candidate->Ld = ld*1.0E3;
-
-        candidate->Xd = xd*1.0E3;
-        candidate->Yd = yd*1.0E3;
-        candidate->Zd = zd*1.0E3;
-        candidate->Td = candidatePosition.T() + td*c_light*1.0E3;
-
-        candidate->AddCandidate(mother);
-
-        fOutputArray->Add(candidate);
-        switch(TMath::Abs(candidate->PID))
-        {
-          case 11:
-            fElectronOutputArray->Add(candidate);
-            break;
-          case 13:
-            fMuonOutputArray->Add(candidate);
-            break;
-          default:
-            fChargedHadronOutputArray->Add(candidate);
-        }
+        case 11:
+          fElectronOutputArray->Add(candidate);
+          break;
+        case 13:
+          fMuonOutputArray->Add(candidate);
+          break;
+        default:
+          fChargedHadronOutputArray->Add(candidate);
       }
+
     }
   }
 }

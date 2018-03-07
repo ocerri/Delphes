@@ -237,6 +237,10 @@ class VertexFinderDAClusterizerZT: public DelphesModule
     // Plot status at the end of the fitting
     void plot_status_end(vertex_t &vtx, tracks_t &tks);
 
+    // Plot Crush
+    void plot_split_crush(double zn, double tn, vertex_t &vtx, tracks_t &tks, int i_vtx);
+
+
   private:
 
     unsigned int fVerbose;
@@ -262,7 +266,6 @@ class VertexFinderDAClusterizerZT: public DelphesModule
 
     Double_t fD2UpdateLim;
     Double_t fD2Merge;
-    Double_t fSplittingSize;
     Double_t fMuOutlayer;
     Double_t fMinTrackProb;
 

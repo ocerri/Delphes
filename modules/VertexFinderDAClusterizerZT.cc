@@ -861,7 +861,9 @@ bool VertexFinderDAClusterizerZT::split(double &beta, vertex_t &vtx, tracks_t & 
         }
         else
         {
-          throw std::invalid_argument( "0 division" );
+          continue;
+          // plot_split_crush(zn, tn, vtx, tks, k);
+          // throw std::invalid_argument( "0 division" );
         }
 
         while(vtx.NearestCluster(t1, z1) != k || vtx.NearestCluster(t2, z2) != k)
@@ -1220,4 +1222,65 @@ void VertexFinderDAClusterizerZT::plot_status_end(vertex_t &vtx, tracks_t &tks)
   c_out->SetGrid();
   c_out->Print(Form("~/Desktop/debug/c_final.png"));
   delete c_out;
+}
+
+// -----------------------------------------------------------------------------
+// Plot splitting
+void VertexFinderDAClusterizerZT::plot_split_crush(double zn, double tn, vertex_t &vtx, tracks_t &tks, int i_vtx)
+{
+  vector<double> t, dt, z, dz;
+
+  for(unsigned int i = 0; i < tks.getSize(); i++)
+  {
+      t.push_back(tks.t[i]);
+      dt.push_back(1./tks.dt_o[i]);
+      z.push_back(tks.z[i]);
+      dz.push_back(1./tks.dz_o[i]);
+  }
+
+
+  double t_min = TMath::Min(TMath::MinElement(t.size(), &t[0]), TMath::MinElement(vtx.getSize(), &(vtx.t[0]))  ) - 50;
+  double t_max = TMath::Max(TMath::MaxElement(t.size(), &t[0]), TMath::MaxElement(vtx.getSize(), &(vtx.t[0]))  ) + 50;
+
+  double z_min = TMath::Min(TMath::MinElement(z.size(), &z[0]), TMath::MinElement(vtx.getSize(), &(vtx.z[0]))  ) - 5;
+  double z_max = TMath::Max(TMath::MaxElement(z.size(), &z[0]), TMath::MaxElement(vtx.getSize(), &(vtx.z[0]))  ) + 5;
+
+  auto c_2Dspace = new TCanvas("c_2Dspace", "c_2Dspace", 800, 600);
+
+  TGraphErrors* gr_PVtks = new TGraphErrors(t.size(), &t[0], &z[0], &dt[0], &dz[0]);
+  gr_PVtks->SetTitle(Form("Clustering space"));
+  gr_PVtks->GetXaxis()->SetTitle("t CA [ps]");
+  gr_PVtks->GetXaxis()->SetLimits(t_min, t_max);
+  gr_PVtks->GetYaxis()->SetTitle("z CA [mm]");
+  gr_PVtks->GetYaxis()->SetRangeUser(z_min, z_max);
+  gr_PVtks->SetMarkerStyle(4);
+  gr_PVtks->SetMarkerColor(1);
+  gr_PVtks->SetLineColor(1);
+  gr_PVtks->Draw("APE1");
+
+  TGraph* gr_vtx = new TGraph(1, &(vtx.t[i_vtx]), &(vtx.z[i_vtx]));
+  gr_vtx->SetMarkerStyle(28);
+  gr_vtx->SetMarkerColor(2);
+  gr_vtx->SetMarkerSize(2.);
+  gr_vtx->Draw("PE1");
+
+  double t_pos[] = {vtx.t[i_vtx], vtx.t[i_vtx]+100};
+  double t_neg[] = {vtx.t[i_vtx], vtx.t[i_vtx]-100};
+  double z_pos[] = {vtx.z[i_vtx], vtx.z[i_vtx]+(zn/tn)*100};
+  double z_neg[] = {vtx.z[i_vtx], vtx.z[i_vtx]-(zn/tn)*100};
+
+  TGraph* gr_pos = new TGraph(2, &t_pos[0], &z_pos[0]);
+  gr_pos->SetLineColor(8);
+  gr_pos->SetMarkerColor(8);
+  gr_pos->Draw("PL");
+  TGraph* gr_neg = new TGraph(2, &t_neg[0], &z_neg[0]);
+  gr_neg->SetLineColor(4);
+  gr_neg->SetMarkerColor(4);
+  gr_neg->Draw("PL");
+
+
+  c_2Dspace->SetGrid();
+  c_2Dspace->SaveAs(Form("~/Desktop/debug/crush_splitting.png"));
+
+  delete c_2Dspace;
 }
