@@ -220,7 +220,7 @@ class VertexFinderDAClusterizerZT: public DelphesModule
     double update(double beta, tracks_t &tks, vertex_t &vtx, double rho0);
 
     // If a vertex has beta_c lower than beta, split it
-    bool split(double &beta,  vertex_t & vtx, tracks_t & tks, double epsilon);
+    bool split(double &beta,  vertex_t & vtx, tracks_t & tks);
 
     // Merge vertexes closer than declared dimensions
     bool merge(vertex_t & vtx, double d2_merge);

@@ -68,7 +68,6 @@ VertexFinderDAClusterizerZT::VertexFinderDAClusterizerZT()
   fPtMin = 0;
   fPtMax = 0;
   fD2Merge = 0;
-  fSplittingSize = 0;
   fMuOutlayer = 0;
   fMinTrackProb = 0;
 }
@@ -106,7 +105,6 @@ void VertexFinderDAClusterizerZT::Init()
 
   fD2UpdateLim     = GetDouble("D2UpdateLim", .5);   // ((dz/ZSize)^2+(dt/TSize)^2)/nv limit for merging vertices
   fD2Merge         = GetDouble("D2Merge", 4.0);      // (dz/ZSize)^2+(dt/TSize)^2 limit for merging vertices
-  fSplittingSize   = GetDouble("SplittingSize", 10); // Size of the perturbation when splitting
   fMuOutlayer      = GetDouble("MuOutlayer", 4);     // Outlayer rejection exponent
   fMinTrackProb    = GetDouble("fMinTrackProb", 0.6);     // Outlayer rejection exponent
 
@@ -316,7 +314,7 @@ void VertexFinderDAClusterizerZT::clusterize(TObjArray &clusters)
 
     if( beta < fBetaStop )
     {
-      split(beta, vtx, tks, fSplittingSize);
+      split(beta, vtx, tks);
       if( fVerbose > 10 ) plot_status(beta, vtx, tks, 0, "Asp");
     }
     else
