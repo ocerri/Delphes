@@ -121,17 +121,6 @@ void ParticlePropagator::Finish()
 
 void ParticlePropagator::Process()
 {
-  cout << "----- Event -----" << endl;
-  Candidate *candidate;
-  Double_t t;
-  Double_t x_t, y_t, z_t;
-  Double_t t1, t2, t3, t4, t5, t6;
-  Double_t t_z, t_r, t_ra, t_rb;
-  Double_t tmp, discr, discr2;
-  Double_t delta, asinrho;
-  Double_t xd, yd, zd, td, phid;
-  Double_t l, ld, d0, dz, p, ctgTheta, etap, vz;
-
   const Double_t c_light = 2.99792458E8;
 
   // // Not used for the moment
@@ -148,6 +137,7 @@ void ParticlePropagator::Process()
   // Double_t bsz = beamSpotPosition.Z()*1.0E-3;
 
   fItInputArray->Reset();
+  Candidate *candidate;
   while((candidate = static_cast<Candidate*>(fItInputArray->Next())))
   {
     TLorentzVector candidatePosition = candidate->Position;
@@ -159,9 +149,7 @@ void ParticlePropagator::Process()
     // check that particle position is inside the cylinder
     if(TMath::Hypot(x, y) > fRadius || TMath::Abs(z) > fHalfLengthMax)
     {
-      cout << "Warning: particle produced outside the detector" << endl;
-      cout << candidate->PID << endl;
-      cout << candidate->Momentum.Eta() << endl;
+      cout << "Warning: particle produced outside the detector and will not be firther taken into account" << endl;
       continue;
     }
 
@@ -182,8 +170,8 @@ void ParticlePropagator::Process()
     if(TMath::Abs(q) < 1.0E-9 || TMath::Abs(fBz) < 1.0E-9)
     {
       // solve pt2*t^2 + 2*(px*x + py*y)*t - (fRadius2 - x*x - y*y) = 0
-      tmp = px*y - py*x;
-      discr2 = pt2*fRadius2 - tmp*tmp;
+      Double_t tmp = px*y - py*x;
+      Double_t discr2 = pt2*fRadius2 - tmp*tmp;
 
       if(discr2 < 0.0)
       {
@@ -192,24 +180,23 @@ void ParticlePropagator::Process()
       }
 
       tmp = px*x + py*y;
-      discr = TMath::Sqrt(discr2);
-      t1 = (-tmp + discr)/pt2;
-      t2 = (-tmp - discr)/pt2;
-      t = (t1 < 0.0) ? t2 : t1;
+      Double_t t1 = (-tmp + TMath::Sqrt(discr2))/pt2;
+      Double_t t2 = (-tmp - TMath::Sqrt(discr2))/pt2;
+      Double_t t = (t1 < 0.0) ? t2 : t1;
 
-      z_t = z + pz*t;
+      Double_t z_t = z + pz*t;
       if(TMath::Abs(z_t) > fHalfLength)
       {
-        t3 = (+fHalfLength - z) / pz;
-        t4 = (-fHalfLength - z) / pz;
+        Double_t t3 = (+fHalfLength - z) / pz;
+        Double_t t4 = (-fHalfLength - z) / pz;
         t = (t3 < 0.0) ? t4 : t3;
       }
 
-      x_t = x + px*t;
-      y_t = y + py*t;
+      Double_t x_t = x + px*t;
+      Double_t y_t = y + py*t;
       z_t = z + pz*t;
 
-      l = TMath::Sqrt( (x_t - x)*(x_t - x) + (y_t - y)*(y_t - y) + (z_t - z)*(z_t - z));
+      Double_t l = TMath::Sqrt( (x_t - x)*(x_t - x) + (y_t - y)*(y_t - y) + (z_t - z)*(z_t - z));
 
       Candidate* mother = candidate;
       candidate = static_cast<Candidate*>(candidate->Clone());
@@ -255,11 +242,11 @@ void ParticlePropagator::Process()
       Double_t x_c = x + r*TMath::Sin(phi_0);
       Double_t y_c = y - r*TMath::Cos(phi_0);
       Double_t r_c = TMath::Hypot(x_c, y_c);
-      Double_t phi = TMath::ATan2(y_c, x_c);
-      if(x_c < 0.0) phi += TMath::Pi();
+      Double_t phi_c = TMath::ATan(y_c/x_c);
+      if(x_c < 0.0) phi_c -= TMath::Sign(1., phi_c)*TMath::Pi();
 
       //Find the time of closest approach
-      td = (phi_0 - TMath::ATan(-x_c/y_c))/omega;
+      Double_t td = (phi_0 - TMath::ATan(-x_c/y_c))/omega;
       //Remove all the modulo pi that might have come from the atan
       Double_t pio = fabs(TMath::Pi()/omega);
       while(fabs(td) > 0.5*pio)
@@ -269,94 +256,159 @@ void ParticlePropagator::Process()
 
       //Compute the coordinate of closed approach to z axis
       //if wants wtr beamline need to be changedto re-center with a traslation of the z axis
-      phid = phi_0 - omega*td;
-      xd = x_c - r*TMath::Sin(phid);
-      yd = y_c + r*TMath::Cos(phid);
-      zd = z + c_light*(pz/e)*td;
+      Double_t phid = phi_0 - omega*td;
+      Double_t xd = x_c - r*TMath::Sin(phid);
+      Double_t yd = y_c + r*TMath::Cos(phid);
+      Double_t zd = z + c_light*(pz/e)*td;
 
       //Compute momentum at closest approach (perigee??)
       px = pt*TMath::Cos(phid);
       py = pt*TMath::Sin(phid);
-      etap = candidateMomentum.Eta();
 
-      candidateMomentum.SetPtEtaPhiE(pt, etap, phid, candidateMomentum.E());
+      candidateMomentum.SetPtEtaPhiE(pt, candidateMomentum.Eta(), phid, candidateMomentum.E());
 
       // calculate additional track parameters (correct for beamspot position)
-      d0 = (xd*py - yd*px)/pt;
-      dz = zd;
+      Double_t d0 = (xd*py - yd*px)/pt;
+      Double_t dz = zd;
       // dz        = z - ((x - bsx) * px + (y - bsy) * py) / pt * (pz / pt);
-      p         = candidateMomentum.P();
-      ctgTheta  = 1.0 / TMath::Tan (candidateMomentum.Theta());
+      Double_t ctgTheta  = 1.0 / TMath::Tan (candidateMomentum.Theta());
 
 
       // 3. time evaluation t = TMath::Min(t_r, t_z)
       //    t_r : time to exit from the sides
       //    t_z : time to exit from the front or the back
-      t_r = 0.0; // in [s]
+      Double_t t = 0;
+      Double_t t_z = 0;
       int sign_pz = (pz > 0.0) ? 1 : -1;
       if(pz == 0.0) t_z = 1.0E99;
       else t_z = gammam / (pz*1.0E9/c_light) * (-z + fHalfLength*sign_pz);
 
-      if(r_c + TMath::Abs(r)  < fRadius)
+      if(r_c + TMath::Abs(r)  < fRadius)   // helix does not cross the cylinder sides
       {
-        // helix does not cross the cylinder sides
         t = t_z;
       }
+      // else
+      // {
+      //   Double_t asinrho = TMath::ASin((fRadius*fRadius - r_c*r_c - r*r) / (2*TMath::Abs(r)*r_c));
+      //   Double_t delta = phi_0 - phi_c;
+      //   if(delta <-TMath::Pi()) delta += 2*TMath::Pi();
+      //   if(delta > TMath::Pi()) delta -= 2*TMath::Pi();
+      //   Double_t t1 = (delta + asinrho) / omega;
+      //   Double_t t2 = (delta + TMath::Pi() - asinrho) / omega;
+      //   Double_t t3 = (delta + TMath::Pi() + asinrho) / omega;
+      //   Double_t t4 = (delta - asinrho) / omega;
+      //   Double_t t5 = (delta - TMath::Pi() - asinrho) / omega;
+      //   Double_t t6 = (delta - TMath::Pi() + asinrho) / omega;
+      //
+      //   if(t1 < 0.0) t1 = 1.0E99;
+      //   if(t2 < 0.0) t2 = 1.0E99;
+      //   if(t3 < 0.0) t3 = 1.0E99;
+      //   if(t4 < 0.0) t4 = 1.0E99;
+      //   if(t5 < 0.0) t5 = 1.0E99;
+      //   if(t6 < 0.0) t6 = 1.0E99;
+      //
+      //   Double_t t_ra = TMath::Min(t1, TMath::Min(t2, t3));
+      //   Double_t t_rb = TMath::Min(t4, TMath::Min(t5, t6));
+      //   Double_t t_r = TMath::Min(t_ra, t_rb);
+      //   t = TMath::Min(t_r, t_z);
+      //   // if(t<4E-9)
+      //   // {
+      //   //   cout << endl;
+      //   //   cout << "------------------ here we are ---------------------" << endl;
+      //   //   cout << "Initial pos: {" << x << ", " << y << ", " << z << "}" << endl;
+      //   //   cout << "Initial Momentum: {" << pt << ", " << candidateMomentum.Eta() << ", " << phi_0 << "}" << endl;
+      //   //   cout << "E: " << e << ", mass: " << candidate->Mass << ", PID: " << candidate->PID << endl;
+      //   //   cout << "beta: " << candidateMomentum.P()/e << endl << endl;
+      //   //
+      //   //   cout << "Check luminal prop up to initial pos" << endl;
+      //   //   cout << "T prod: " <<  candidatePosition.T()*1e-3/c_light << endl;
+      //   //   cout << "T transverse minimum: " << TMath::Hypot(x,y)/c_light << endl;
+      //   //   cout << endl;
+      //   //
+      //   //   cout << "Distances in [ps] from detector" << endl;
+      //   //   double tfrom_endcap = (sign_pz*fHalfLength - z)/(c_light*pz/e);
+      //   //   cout << "T from endcap: " << tfrom_endcap << endl;
+      //   //   double tfrom_barrel = (fRadius - TMath::Hypot(x,y))/(c_light*pt/e);
+      //   //   cout << "T from barrel: " << tfrom_barrel << endl << endl;
+      //   //
+      //   //   cout << "tz: " << t_z << endl;
+      //   //   cout << "t1: " << t1 << endl;
+      //   //   cout << "t2: " << t2 << endl;
+      //   //   cout << "t3: " << t3 << endl;
+      //   //   cout << "t4: " << t4 << endl;
+      //   //   cout << "t5: " << t5 << endl;
+      //   //   cout << "t6: " << t6 << endl;
+      //   //   cout << "t:  " << t << endl << endl;
+      //   // }
+      // }
+      // // 4. position in terms of x(t), y(t), z(t)
+      // Double_t x_t = x_c + r * TMath::Sin(omega * t - phi_0);
+      // Double_t y_t = y_c + r * TMath::Cos(omega * t - phi_0);
+      // Double_t z_t = z + pz*1.0E9 / c_light / gammam * t;
       else
       {
-        asinrho = TMath::ASin((fRadius*fRadius - r_c*r_c - r*r) / (2*TMath::Abs(r)*r_c));
-        delta = phi_0 - phi;
-        if(delta <-TMath::Pi()) delta += 2*TMath::Pi();
-        if(delta > TMath::Pi()) delta -= 2*TMath::Pi();
-        t1 = (delta + asinrho) / omega;
-        t2 = (delta + TMath::Pi() - asinrho) / omega;
-        t3 = (delta + TMath::Pi() + asinrho) / omega;
-        t4 = (delta - asinrho) / omega;
-        t5 = (delta - TMath::Pi() - asinrho) / omega;
-        t6 = (delta - TMath::Pi() + asinrho) / omega;
+        Double_t alpha = -(fRadius*fRadius - r*r - r_c*r_c)/(2*fabs(r)*r_c);
+        alpha = fabs(TMath::ACos(alpha));
 
-        if(t1 < 0.0) t1 = 1.0E99;
-        if(t2 < 0.0) t2 = 1.0E99;
-        if(t3 < 0.0) t3 = 1.0E99;
-        if(t4 < 0.0) t4 = 1.0E99;
-        if(t5 < 0.0) t5 = 1.0E99;
-        if(t6 < 0.0) t6 = 1.0E99;
-
-        t_ra = TMath::Min(t1, TMath::Min(t2, t3));
-        t_rb = TMath::Min(t4, TMath::Min(t5, t6));
-        t_r = TMath::Min(t_ra, t_rb);
-        t = TMath::Min(t_r, t_z);
-        if(t<4E-9)
-        {
-          cout << "there we are" << endl;
-          cout << "tz: " << t_z << endl;
-          cout << "t1: " << t1 << endl;
-          cout << "t2: " << t2 << endl;
-          cout << "t3: " << t3 << endl;
-          cout << "t4: " << t4 << endl;
-          cout << "t5: " << t5 << endl;
-          cout << "t6: " << t6 << endl;
-        }
+        t = td + alpha/fabs(omega);
       }
+      Double_t x_t = x_c - r*TMath::Sin(phi_0 - omega*t);
+      Double_t y_t = y_c + r*TMath::Cos(phi_0 - omega*t);
+      Double_t z_t = z + c_light*t*pz/e;
 
+      // if(t<4E-9)
+      // {
+      //   cout << endl;
+      //   cout << "------------------ here we are ---------------------" << endl;
+      //   cout << "Initial pos: {" << x << ", " << y << ", " << z << "}" << endl;
+      //   cout << "Initial Momentum: {" << pt << ", " << candidateMomentum.Eta() << ", " << phi_0 << "}" << endl;
+      //   cout << "E: " << e << ", mass: " << candidate->Mass << ", PID: " << candidate->PID << endl;
+      //   cout << "beta: " << candidateMomentum.P()/e << endl << endl;
+      //
+      //   cout << "Check luminal prop up to initial pos" << endl;
+      //   cout << "T prod: " <<  candidatePosition.T()*1e-3/c_light << endl;
+      //   cout << "T transverse minimum: " << TMath::Hypot(x,y)/c_light << endl;
+      //   cout << endl;
+      //
+      //   cout << "Distances in [ps] from detector" << endl;
+      //   double tfrom_endcap = (sign_pz*fHalfLength - z)/(c_light*pz/e);
+      //   cout << "T from endcap: " << tfrom_endcap << endl;
+      //   double tfrom_barrel = (fRadius - TMath::Hypot(x,y))/(c_light*pt/e);
+      //   cout << "T from barrel: " << tfrom_barrel << endl << endl;
+      //
+      //   cout << "tz: " << t_z << endl;
+      //   cout << "t:  " << t << endl << endl;
+      // }
+      //
+      //
+      // if(fabs(TMath::Hypot(x_t,y_t) - fRadius)>0.01 && fabs(fabs(z_t) - fHalfLength)>0.01)
+      // {
+      //   cout << "-------------FLAG!" << endl;
+      //   cout << TMath::Hypot(x_t,y_t)- fRadius << " - " << fabs(z_t) - fHalfLength << endl;
+      //
+      //     cout << "Distances in [ps] from detector" << endl;
+      //     double tfrom_endcap = (sign_pz*fHalfLength - z)/(c_light*pz/e);
+      //     cout << "T from endcap: " << tfrom_endcap << endl;
+      //     double tfrom_barrel = (fRadius - TMath::Hypot(x,y))/(c_light*pt/e);
+      //     cout << "T from barrel: " << tfrom_barrel << endl << endl;
+      //
+      //     cout << "tz: " << t_z << endl;
+      //     cout << "t:  " << t << endl << endl;
+      // }
 
-      // 4. position in terms of x(t), y(t), z(t)
-      x_t = x_c + r * TMath::Sin(omega * t - phi_0);
-      y_t = y_c + r * TMath::Cos(omega * t - phi_0);
-      z_t = z + pz*1.0E9 / c_light / gammam * t;
 
       // compute path length for an helix
-      vz = pz*1.0E9 / c_light / gammam;
+      Double_t vz = pz*1.0E9 / c_light / gammam;
       //lenght of the path from production to tracker
-      l = t * TMath::Sqrt(vz*vz + r*r*omega*omega);
+      Double_t l = t * TMath::Sqrt(vz*vz + r*r*omega*omega);
       //lenght of the path from closest approach to z axis to tracker`
-      ld = (t-td) * TMath::Sqrt(vz*vz + r*r*omega*omega);
+      Double_t ld = (t-td) * TMath::Sqrt(vz*vz + r*r*omega*omega);
 
 
       // store these variables before cloning
       candidate->D0 = d0*1.0E3;
       candidate->DZ = dz*1.0E3;
-      candidate->P  = p;
+      candidate->P  = candidateMomentum.P();
       candidate->PT = pt;
       //Momentum variables at closest approach
       candidate->CtgTheta = ctgTheta;
