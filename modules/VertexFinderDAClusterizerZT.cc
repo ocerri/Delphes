@@ -89,11 +89,11 @@ void VertexFinderDAClusterizerZT::Init()
   fMaxVertexNumber = GetInt("MaxVertexNumber", 500);
 
   fBetaMax         = GetDouble("BetaMax", 1.);
-  fBetaPurge       = GetDouble("BetaPurge", 0.7);
-  fBetaStop        = GetDouble("BetaStop", 0.5);
+  fBetaPurge       = GetDouble("BetaPurge", 0.5);
+  fBetaStop        = GetDouble("BetaStop", 0.25);
 
   fVertexZSize     = GetDouble("VertexZSize", 0.1); //in mm
-  fVertexTSize     = 1E12*GetDouble("VertexTimeSize", 20E-12); //Convert from [s] to [ps]
+  fVertexTSize     = 1E12*GetDouble("VertexTimeSize", 15E-12); //Convert from [s] to [ps]
 
   fCoolingFactor   = GetDouble("CoolingFactor", 0.8); // Multiply T so to cooldown must be <1
 
@@ -194,54 +194,49 @@ void VertexFinderDAClusterizerZT::Process()
   unsigned int k = 0;
   while((candidate = static_cast<Candidate*>(ItClusterArray->Next())))
   {
-     if(fVerbose)
-     {
-       cout << Form("Cluster %d has %d tracks ", k, candidate->GetCandidates()->GetEntriesFast()) << endl;
-     }
+    if(fVerbose)
+    {
+     cout << Form("Cluster %d has %d tracks ", k, candidate->GetCandidates()->GetEntriesFast()) << endl;
+    }
 
 
-  //    // Somehow fit the vertex from the tracks now
-  //    // loop over tracks belonging to this vertex
-  //    TIter it1(candidate->GetCandidates());
-  //    it1.Reset();
-  //
-  //    Candidate *track;
-  //    int n_tr = 0
-  //    while((track = static_cast<Candidate*>(it1.Next())))
-  //    {
-  //       n_tr++;
-  //
-  //       double t = track->InitialPosition.T()/c_light;
-  //       double dt = track->ErrorT/c_light;
-  //       const double time = t;
-  //       const double inverr = 1.0/dt;
-  //       meantime += time*inverr;
-  //       expv_x2  += time*time*inverr;
-  //       normw    += inverr;
-  //
-  //       // compute error position TBC
-  //       const double pt = track->Momentum.Pt();
-  //       const double z = track->DZ/10.0;
-  //       const double err_pt = track->ErrorPT;
-  //       const double err_z = track->ErrorDZ;
-  //
-  //       const double wi = (pt/(err_pt*err_z))*(pt/(err_pt*err_z));
-  //       meanpos += z*wi;
-  //
-  //       meanerr2 += err_z*err_z*wi;
-  //       normpos += wi;
-  //       sumpt2 += pt*pt;
-  //    }
-  //
-  //    candidate->Position.SetXYZT(0.0, 0.0, meanpos*10.0 , meantime*c_light);
-  //    candidate->PositionError.SetXYZT(0.0, 0.0, errpos*10.0 , errtime*c_light);
-  //    candidate->SumPT2 = sumpt2;
-  //    candidate->ClusterNDF = n_tr;
-  //    candidate->ClusterIndex = k;
-
-
-     fVertexOutputArray->Add(candidate);
-     k++;
+   //  // Somehow fit the vertex from the tracks now
+   //  // loop over tracks belonging to this vertex
+   //  TIter it1(candidate->GetCandidates());
+   //  it1.Reset();
+   //
+   //  Candidate *track;
+   //  int n_tr = 0
+   //  while((track = static_cast<Candidate*>(it1.Next())))
+   //  {
+   //    n_tr++;
+   //
+   //    double t = track->InitialPosition.T()/c_light;
+   //    double dt = track->ErrorT/c_light;
+   //    const double time = t;
+   //    const double inverr = 1.0/dt;
+   //    meantime += time*inverr;
+   //    expv_x2  += time*time*inverr;
+   //    normw    += inverr;
+   //
+   //    // compute error position TBC
+   //    const double pt = track->Momentum.Pt();
+   //    const double z = track->DZ/10.0;
+   //    const double err_pt = track->ErrorPT;
+   //    const double err_z = track->ErrorDZ;
+   //
+   //    const double wi = (pt/(err_pt*err_z))*(pt/(err_pt*err_z));
+   //    meanpos += z*wi;
+   //
+   //    meanerr2 += err_z*err_z*wi;
+   //    normpos += wi;
+   //    sumpt2 += pt*pt;
+   //  }
+   //
+   //  candidate->PositionError.SetXYZT(0.0, 0.0, errpos*10.0 , errtime*c_light);
+   //
+    fVertexOutputArray->Add(candidate);
+    k++;
    }// end of cluster loop
 
   delete ClusterArray;
@@ -435,7 +430,6 @@ void VertexFinderDAClusterizerZT::clusterize(TObjArray &clusters)
   // Assign each track to the most probable vertex
   double Z_init = rho0 * exp(-beta * fMuOutlayer * fMuOutlayer); // Add fDtCutOff here toghether  with this
   vector<double> pk_exp_mBetaE = Compute_pk_exp_mBetaE(beta, vtx, tks, Z_init);
-
   for(unsigned int i = 0; i< tks.getSize(); i++)
   {
     if(tks.w[i] <= 0) continue;
@@ -789,7 +783,7 @@ double VertexFinderDAClusterizerZT::update(double beta, tracks_t &tks, vertex_t 
 //------------------------------------------------------------------------------
 // Split critical vertices (beta_c < beta)
 // Returns true if at least one cluster was split
-bool VertexFinderDAClusterizerZT::split(double &beta, vertex_t &vtx, tracks_t & tks, double epsilon)
+bool VertexFinderDAClusterizerZT::split(double &beta, vertex_t &vtx, tracks_t & tks)
 {
   bool split = false;
 
@@ -870,22 +864,6 @@ bool VertexFinderDAClusterizerZT::split(double &beta, vertex_t &vtx, tracks_t & 
         else
         {
           throw std::invalid_argument( "0 division" );
-          // cout << "Something worng" << endl;
-          // double aux_slope = zn/tn;
-          // double delta = epsilon/sqrt(1+aux_slope*aux_slope); //in the measure sqrt((dz/sz)^2 + (dt/st)^2)
-          //
-          // if( fVerbose > 3 )
-          // {
-          //   cout << aux_slope << "   delta = " << delta << endl;
-          // }
-          //
-          // double t_displ = delta * fVertexTSize;
-          // double z_displ = aux_slope * delta * fVertexZSize;
-          //
-          // t1 = t_old + t_displ;
-          // z1 = z_old + z_displ;
-          // t2 = t_old - t_displ;
-          // z2 = z_old - z_displ;
         }
 
         while(vtx.NearestCluster(t1, z1) != k || vtx.NearestCluster(t2, z2) != k)

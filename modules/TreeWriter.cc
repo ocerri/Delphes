@@ -231,6 +231,8 @@ void TreeWriter::ProcessParticles(ExRootTreeBranch *branch, TObjArray *array)
     entry->Y = position.Y();
     entry->Z = position.Z();
     entry->T = position.T()*1.0E-3/c_light;
+
+    entry->VertexIndex = candidate->ClusterIndex;
   }
 }
 
@@ -243,11 +245,6 @@ void TreeWriter::ProcessVertices(ExRootTreeBranch *branch, TObjArray *array)
   Vertex *entry = 0;
 
   const Double_t c_light = 2.99792458E8;
-
-  CompBase *compare = Candidate::fgCompare;
-  Candidate::fgCompare = CompSumPT2<Candidate>::Instance();
-  array->Sort();
-  Candidate::fgCompare = compare;
 
   // loop over all vertices
   iterator.Reset();
@@ -346,7 +343,14 @@ void TreeWriter::ProcessTracks(ExRootTreeBranch *branch, TObjArray *array)
     entry->Zd = candidate->Zd;
     entry->Td = candidate->Td*1.0E-3/c_light;
 
-    entry->tof_reco = 1E-3*(candidate->Position.T() - candidate->InitialPosition.T())/c_light;
+    if(candidate->ClusterIndex != -1)
+    {
+      entry->tof_reco = 1E-3*(candidate->Position.T() - candidate->InitialPosition.T())/c_light;
+    }
+    else
+    {
+      entry->tof_reco =-1E6;
+    }
 
 
     const TLorentzVector &momentum = candidate->Momentum;

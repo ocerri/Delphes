@@ -115,7 +115,7 @@ void PileUpMerger::Process()
 {
   TDatabasePDG *pdg = TDatabasePDG::Instance();
   TParticlePDG *pdgParticle;
-  Int_t pid, nch, nvtx = -1;
+  Int_t pid, nch, nvtx = 0;
   Float_t x, y, z, t, vx, vy;
   Float_t px, py, pz, e, pt;
   Double_t dz, dphi, dt, sumpt2;
@@ -149,6 +149,7 @@ void PileUpMerger::Process()
   vertex = factory->NewCandidate();
 
   numberOfParticles = fInputArray->GetEntriesFast();
+
   while((candidate = static_cast<Candidate*>(fItInputArray->Next())))
   {
     double pt2 = candidate->Momentum.Pt() * candidate->Momentum.Pt();
@@ -161,7 +162,7 @@ void PileUpMerger::Process()
     candidate->Position.SetT(t + dt);
 
     candidate->IsPU = 0;
-
+    candidate->ClusterIndex = nvtx;
     fParticleOutputArray->Add(candidate);
 
     if(TMath::Abs(candidate->Charge) >  1.0E-9)
@@ -172,8 +173,8 @@ void PileUpMerger::Process()
     }
   }
 
-  nvtx++;
   vertex->ClusterIndex = nvtx;
+  nvtx++;
   if(sumpt2 > 0)
   {
     vx /= sumpt2;
@@ -270,7 +271,7 @@ void PileUpMerger::Process()
         sumpt2 += pt*pt;
         vertex->AddCandidate(candidate);
       }
-
+      candidate->ClusterIndex = nvtx;
       fParticleOutputArray->Add(candidate);
     }
 
@@ -280,10 +281,10 @@ void PileUpMerger::Process()
       vy /= sumpt2;
     }
 
-    nvtx++;
     vertex->Position.SetXYZT(vx, vy, dz, dt);
 
     vertex->ClusterIndex = nvtx;
+    nvtx++;
     vertex->ClusterNDF = nch;
     vertex->SumPT2 = -1;
     vertex->GenSumPT2 = sumpt2;
