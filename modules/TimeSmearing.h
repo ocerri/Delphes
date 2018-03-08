@@ -46,6 +46,7 @@ public:
 private:
 
   Double_t fTimeResolution;
+  Double_t fEtaMax;
 
   TIterator *fItInputArray; //!
 

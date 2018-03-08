@@ -287,114 +287,23 @@ void ParticlePropagator::Process()
       {
         t = t_z;
       }
-      // else
-      // {
-      //   Double_t asinrho = TMath::ASin((fRadius*fRadius - r_c*r_c - r*r) / (2*TMath::Abs(r)*r_c));
-      //   Double_t delta = phi_0 - phi_c;
-      //   if(delta <-TMath::Pi()) delta += 2*TMath::Pi();
-      //   if(delta > TMath::Pi()) delta -= 2*TMath::Pi();
-      //   Double_t t1 = (delta + asinrho) / omega;
-      //   Double_t t2 = (delta + TMath::Pi() - asinrho) / omega;
-      //   Double_t t3 = (delta + TMath::Pi() + asinrho) / omega;
-      //   Double_t t4 = (delta - asinrho) / omega;
-      //   Double_t t5 = (delta - TMath::Pi() - asinrho) / omega;
-      //   Double_t t6 = (delta - TMath::Pi() + asinrho) / omega;
-      //
-      //   if(t1 < 0.0) t1 = 1.0E99;
-      //   if(t2 < 0.0) t2 = 1.0E99;
-      //   if(t3 < 0.0) t3 = 1.0E99;
-      //   if(t4 < 0.0) t4 = 1.0E99;
-      //   if(t5 < 0.0) t5 = 1.0E99;
-      //   if(t6 < 0.0) t6 = 1.0E99;
-      //
-      //   Double_t t_ra = TMath::Min(t1, TMath::Min(t2, t3));
-      //   Double_t t_rb = TMath::Min(t4, TMath::Min(t5, t6));
-      //   Double_t t_r = TMath::Min(t_ra, t_rb);
-      //   t = TMath::Min(t_r, t_z);
-      //   // if(t<4E-9)
-      //   // {
-      //   //   cout << endl;
-      //   //   cout << "------------------ here we are ---------------------" << endl;
-      //   //   cout << "Initial pos: {" << x << ", " << y << ", " << z << "}" << endl;
-      //   //   cout << "Initial Momentum: {" << pt << ", " << candidateMomentum.Eta() << ", " << phi_0 << "}" << endl;
-      //   //   cout << "E: " << e << ", mass: " << candidate->Mass << ", PID: " << candidate->PID << endl;
-      //   //   cout << "beta: " << candidateMomentum.P()/e << endl << endl;
-      //   //
-      //   //   cout << "Check luminal prop up to initial pos" << endl;
-      //   //   cout << "T prod: " <<  candidatePosition.T()*1e-3/c_light << endl;
-      //   //   cout << "T transverse minimum: " << TMath::Hypot(x,y)/c_light << endl;
-      //   //   cout << endl;
-      //   //
-      //   //   cout << "Distances in [ps] from detector" << endl;
-      //   //   double tfrom_endcap = (sign_pz*fHalfLength - z)/(c_light*pz/e);
-      //   //   cout << "T from endcap: " << tfrom_endcap << endl;
-      //   //   double tfrom_barrel = (fRadius - TMath::Hypot(x,y))/(c_light*pt/e);
-      //   //   cout << "T from barrel: " << tfrom_barrel << endl << endl;
-      //   //
-      //   //   cout << "tz: " << t_z << endl;
-      //   //   cout << "t1: " << t1 << endl;
-      //   //   cout << "t2: " << t2 << endl;
-      //   //   cout << "t3: " << t3 << endl;
-      //   //   cout << "t4: " << t4 << endl;
-      //   //   cout << "t5: " << t5 << endl;
-      //   //   cout << "t6: " << t6 << endl;
-      //   //   cout << "t:  " << t << endl << endl;
-      //   // }
-      // }
-      // // 4. position in terms of x(t), y(t), z(t)
-      // Double_t x_t = x_c + r * TMath::Sin(omega * t - phi_0);
-      // Double_t y_t = y_c + r * TMath::Cos(omega * t - phi_0);
-      // Double_t z_t = z + pz*1.0E9 / c_light / gammam * t;
       else
       {
         Double_t alpha = -(fRadius*fRadius - r*r - r_c*r_c)/(2*fabs(r)*r_c);
         alpha = fabs(TMath::ACos(alpha));
 
-        t = td + alpha/fabs(omega);
+        Double_t t_r = td + alpha/fabs(omega);
+
+        t = TMath::Min(t_r, t_z);
       }
       Double_t x_t = x_c - r*TMath::Sin(phi_0 - omega*t);
       Double_t y_t = y_c + r*TMath::Cos(phi_0 - omega*t);
       Double_t z_t = z + c_light*t*pz/e;
 
-      // if(t<4E-9)
-      // {
-      //   cout << endl;
-      //   cout << "------------------ here we are ---------------------" << endl;
-      //   cout << "Initial pos: {" << x << ", " << y << ", " << z << "}" << endl;
-      //   cout << "Initial Momentum: {" << pt << ", " << candidateMomentum.Eta() << ", " << phi_0 << "}" << endl;
-      //   cout << "E: " << e << ", mass: " << candidate->Mass << ", PID: " << candidate->PID << endl;
-      //   cout << "beta: " << candidateMomentum.P()/e << endl << endl;
-      //
-      //   cout << "Check luminal prop up to initial pos" << endl;
-      //   cout << "T prod: " <<  candidatePosition.T()*1e-3/c_light << endl;
-      //   cout << "T transverse minimum: " << TMath::Hypot(x,y)/c_light << endl;
-      //   cout << endl;
-      //
-      //   cout << "Distances in [ps] from detector" << endl;
-      //   double tfrom_endcap = (sign_pz*fHalfLength - z)/(c_light*pz/e);
-      //   cout << "T from endcap: " << tfrom_endcap << endl;
-      //   double tfrom_barrel = (fRadius - TMath::Hypot(x,y))/(c_light*pt/e);
-      //   cout << "T from barrel: " << tfrom_barrel << endl << endl;
-      //
-      //   cout << "tz: " << t_z << endl;
-      //   cout << "t:  " << t << endl << endl;
-      // }
-      //
-      //
-      // if(fabs(TMath::Hypot(x_t,y_t) - fRadius)>0.01 && fabs(fabs(z_t) - fHalfLength)>0.01)
-      // {
-      //   cout << "-------------FLAG!" << endl;
-      //   cout << TMath::Hypot(x_t,y_t)- fRadius << " - " << fabs(z_t) - fHalfLength << endl;
-      //
-      //     cout << "Distances in [ps] from detector" << endl;
-      //     double tfrom_endcap = (sign_pz*fHalfLength - z)/(c_light*pz/e);
-      //     cout << "T from endcap: " << tfrom_endcap << endl;
-      //     double tfrom_barrel = (fRadius - TMath::Hypot(x,y))/(c_light*pt/e);
-      //     cout << "T from barrel: " << tfrom_barrel << endl << endl;
-      //
-      //     cout << "tz: " << t_z << endl;
-      //     cout << "t:  " << t << endl << endl;
-      // }
+      if(fabs(TMath::Hypot(x_t,y_t) - fRadius)>0.01 && fabs(fabs(z_t) - fHalfLength)>0.01)
+      {
+        cout << Form("- Warning: BAD propagarion. Distance from Barrel %1.2e m, Endcap %1.2e m", TMath::Hypot(x_t,y_t)- fRadius, fabs(z_t) - fHalfLength) << endl;
+      }
 
 
       // compute path length for an helix

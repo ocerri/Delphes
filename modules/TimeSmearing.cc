@@ -71,6 +71,7 @@ void TimeSmearing::Init()
   // read resolution formula
 
   fTimeResolution = GetDouble("TimeResolution", 3.0E-11);
+  fEtaMax = GetDouble("EtaMax", 3.0);
   // import input array
 
   fInputArray = ImportArray(GetString("InputArray", "MuonMomentumSmearing/muons"));
@@ -106,7 +107,7 @@ void TimeSmearing::Process()
     tf = candidateFinalPosition.T()*1.0E-3/c_light;
 
     // apply smearing formula
-    if(fabs(candidateFinalPosition.Eta())<2.4)
+    if(fabs(candidateFinalPosition.Eta())<fEtaMax)
     {
       tf_smeared = tf + fTimeResolution*gRandom->Gaus(0, 1);
     }
