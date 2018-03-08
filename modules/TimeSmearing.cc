@@ -118,12 +118,10 @@ void TimeSmearing::Process()
 
     mother = candidate;
     candidate = static_cast<Candidate*>(candidate->Clone());
+    candidate->AddCandidate(mother);
     candidate->InitialPosition.SetT(ti*1.0E3*c_light);
     candidate->Position.SetT(tf_smeared*1.0E3*c_light);
-
     candidate->ErrorT = fTimeResolution*1.0E3*c_light;
-
-    candidate->AddCandidate(mother);
 
     fOutputArray->Add(candidate);
   }

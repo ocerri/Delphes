@@ -225,7 +225,7 @@ void VertexFinderDAClusterizerZT::Process()
       double sigma_z = sqrt(sum_Dz_2/sum_wz);
       double sigma_t = sqrt(sum_Dt_2/sum_wt);
       candidate->PositionError.SetXYZT(0.0, 0.0, sigma_z , sigma_t);
-      if(fVerbose > 3 || 1)
+      if(fVerbose > 3)
       {
         cout << "k: " << k << endl;
         cout << "Sigma z: " << sigma_z*1E3 << " um" << endl;
@@ -515,6 +515,7 @@ void VertexFinderDAClusterizerZT::fill(tracks_t &tks)
     // ------------- Compute cloasest approach T ----------------
     //Asumme pion mass which is the most common particle
     double M = 0.139570;
+    candidate->Mass = M;
     p = pt * sqrt(1 + candidate->CtgTheta*candidate->CtgTheta);
     e = sqrt(p*p + M*M);
     bz = pt * candidate->CtgTheta/e;
@@ -547,7 +548,7 @@ void VertexFinderDAClusterizerZT::fill(tracks_t &tks)
 
     if(fD0CutOff > 0 && candidate->ErrorD0 > 0)
     {
-      double d0_sig = candidate->D0/candidate->ErrorD0;
+      double d0_sig = fabs(candidate->D0/candidate->ErrorD0);
       w = exp(d0_sig*d0_sig - fD0CutOff*fD0CutOff);
       w = 1./(1. + w);
       if (w < 1E-10) discard = 1;

@@ -69,6 +69,7 @@
 #include "modules/VertexFinder.h"
 #include "modules/AdaptiveVertexFitting4D.h"
 #include "modules/VertexFinderDAClusterizerZT.h"
+#include "modules/HighMassVertexRecover.h"
 #include "modules/ExampleModule.h"
 
 #ifdef __CINT__
@@ -121,6 +122,7 @@
 #pragma link C++ class VertexFinder+;
 #pragma link C++ class AdaptiveVertexFitting4D+;
 #pragma link C++ class VertexFinderDAClusterizerZT+;
+#pragma link C++ class HighMassVertexRecover+;
 #pragma link C++ class ExampleModule+;
 
 #endif

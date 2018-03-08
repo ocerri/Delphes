@@ -392,6 +392,7 @@ tmp/modules/ModulesDict.$(SrcSuf): \
 	modules/VertexFinder.h \
 	modules/AdaptiveVertexFitting4D.h \
 	modules/VertexFinderDAClusterizerZT.h \
+	modules/HighMassVertexRecover.h \
 	modules/ExampleModule.h
 tmp/modules/ModulesDict$(PcmSuf): \
 	tmp/modules/ModulesDict.$(SrcSuf)
@@ -703,6 +704,15 @@ tmp/modules/Hector.$(ObjSuf): \
 	external/Hector/H_BeamLine.h \
 	external/Hector/H_RecRPObject.h \
 	external/Hector/H_BeamParticle.h
+tmp/modules/HighMassVertexRecover.$(ObjSuf): \
+	modules/HighMassVertexRecover.$(SrcSuf) \
+	modules/HighMassVertexRecover.h \
+	classes/DelphesClasses.h \
+	classes/DelphesFactory.h \
+	classes/DelphesFormula.h \
+	external/ExRootAnalysis/ExRootResult.h \
+	external/ExRootAnalysis/ExRootFilter.h \
+	external/ExRootAnalysis/ExRootClassifier.h
 tmp/modules/IdentificationMap.$(ObjSuf): \
 	modules/IdentificationMap.$(SrcSuf) \
 	modules/IdentificationMap.h \
@@ -1054,6 +1064,7 @@ DELPHES_OBJ +=  \
 	tmp/modules/EnergySmearing.$(ObjSuf) \
 	tmp/modules/ExampleModule.$(ObjSuf) \
 	tmp/modules/Hector.$(ObjSuf) \
+	tmp/modules/HighMassVertexRecover.$(ObjSuf) \
 	tmp/modules/IdentificationMap.$(ObjSuf) \
 	tmp/modules/ImpactParameterSmearing.$(ObjSuf) \
 	tmp/modules/Isolation.$(ObjSuf) \
@@ -2140,6 +2151,10 @@ external/fastjet/LimitedWarning.hh: \
 
 external/fastjet/config.h: \
 	external/fastjet/config_win.h
+	@touch $@
+
+modules/HighMassVertexRecover.h: \
+	classes/DelphesModule.h
 	@touch $@
 
 classes/DelphesClasses.h: \

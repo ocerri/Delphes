@@ -144,6 +144,7 @@ void PileUpMerger::Process()
   vy = 0.0;
   nch = 0;
   sumpt2 = 0.0;
+  sumpt2_sel = 0.0;
 
   factory = GetFactory();
   vertex = factory->NewCandidate();
@@ -170,7 +171,16 @@ void PileUpMerger::Process()
       sumpt2 += pt2;
       nch++;
       vertex->AddCandidate(candidate);
+
+      if(candidate->Momentum.Pt() < 50 && candidate->Momentum.Pt() > 0.5)
+      {
+        if(fabs(candidate->PID) < 5000) //is SM
+        {
+          sumpt2_sel += pt2;
+        }
+      }
     }
+
   }
 
   vertex->ClusterIndex = nvtx;
@@ -183,7 +193,7 @@ void PileUpMerger::Process()
   vertex->Position.SetXYZT(vx, vy, dz, dt);
   vertex->PositionError.SetXYZT(0,0,0,0);
   vertex->ClusterNDF = nch;
-  vertex->SumPT2 = -1;
+  vertex->SumPT2 = sumpt2_sel;
   vertex->GenSumPT2 = sumpt2;
   fVertexOutputArray->Add(vertex);
 
