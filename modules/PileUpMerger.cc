@@ -144,7 +144,7 @@ void PileUpMerger::Process()
   vy = 0.0;
   nch = 0;
   sumpt2 = 0.0;
-  sumpt2_sel = 0.0;
+  Double_t sumpt2_sel = 0.0;
 
   factory = GetFactory();
   vertex = factory->NewCandidate();
