@@ -210,13 +210,12 @@ void HighMassVertexRecover::Process()
 
           Double_t p = track->Momentum.Pt() * sqrt(1 + track->CtgTheta*track->CtgTheta);
           Double_t e = track->Momentum.Pt() * track->CtgTheta / beta_z;
-
           track->Mass = sqrt(e*e - p*p);
           track->ClusterIndex = vtx[0]->ClusterIndex;
           track->InitialPosition.SetT(vtx[0]->Position.T());
           track->InitialPosition.SetZ(vtx[0]->Position.Z());
 
-          vtx[i]->SumPT2 += track->Momentum.Pt()*track->Momentum.Pt();
+          vtx[0]->SumPT2 += track->Momentum.Pt()*track->Momentum.Pt();
           if(fVerbose>5)
           {
             cout << "BSM VTX fitted:" << endl;

@@ -419,6 +419,8 @@ public:
 
   Int_t Charge; // track charge
 
+  Double_t Mass; // track mass
+
   Float_t P; // track momentum
   Float_t PT; // track transverse momentum
   Float_t Eta; // track pseudorapidity

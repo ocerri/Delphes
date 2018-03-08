@@ -244,6 +244,7 @@ void PileUpMerger::Process()
     vy = 0.0;
     numberOfParticles = 0;
     sumpt2 = 0.0;
+    Double_t sumpt2_sel = 0.0;
     nch = 0;
 
     vertex = factory->NewCandidate();
@@ -280,6 +281,14 @@ void PileUpMerger::Process()
         nch++;
         sumpt2 += pt*pt;
         vertex->AddCandidate(candidate);
+
+        if(candidate->Momentum.Pt() < 50 && candidate->Momentum.Pt() > 0.5)
+        {
+          if(fabs(candidate->PID) < 5000) //is SM
+          {
+            sumpt2_sel += pt*pt;
+          }
+        }
       }
       candidate->ClusterIndex = nvtx;
       fParticleOutputArray->Add(candidate);
@@ -296,7 +305,7 @@ void PileUpMerger::Process()
     vertex->ClusterIndex = nvtx;
     nvtx++;
     vertex->ClusterNDF = nch;
-    vertex->SumPT2 = -1;
+    vertex->SumPT2 = sumpt2_sel;
     vertex->GenSumPT2 = sumpt2;
 
     vertex->IsPU = 1;
