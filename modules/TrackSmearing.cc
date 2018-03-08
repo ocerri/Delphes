@@ -334,54 +334,61 @@ void TrackSmearing::Process()
       candidate->PositionError.SetZ(fZOuterResolution);
     }
 
-    if(pError*ctgThetaError*phiError > 0.)
-    {
-      cout << "To be validated" << endl;
-      p = gRandom->Gaus(p, pError);
-      ctgTheta = gRandom->Gaus(ctgTheta, ctgThetaError);
-      phi = gRandom->Gaus(phi, phiError);
+    // if(pError*ctgThetaError*phiError > 0.)
+    // {
+    //   cout << "To be validated" << endl;
+    //   p = gRandom->Gaus(p, pError);
+    //   ctgTheta = gRandom->Gaus(ctgTheta, ctgThetaError);
+    //   phi = gRandom->Gaus(phi, phiError);
+    //
+    //   if(p < 0.0) continue;
+    //   while (phi > TMath::Pi ()) phi -= TMath::TwoPi ();
+    //   while (phi <= -TMath::Pi ()) phi += TMath::TwoPi ();
+    //
+    //
+    //   candidate->P = p;
+    //   candidate->CtgTheta = ctgTheta;
+    //   candidate->Phi = phi;
+    //
+    //   theta = TMath::ACos(ctgTheta / TMath::Sqrt (1.0 + ctgTheta * ctgTheta));
+    //   candidate->Momentum.SetPx (p * TMath::Cos (phi) * TMath::Sin (theta));
+    //   candidate->Momentum.SetPy (p * TMath::Sin (phi) * TMath::Sin (theta));
+    //   candidate->Momentum.SetPz (p * TMath::Cos (theta));
+    //   candidate->Momentum.SetE (candidate->Momentum.Pt () * TMath::CosH (eta));
+    //   candidate->PT = candidate->Momentum.Pt ();
+    //
+    //   x = position.X ();
+    //   y = position.Y ();
+    //   z = position.Z ();
+    //   t = position.T ();
+    //   px = candidate->Momentum.Px ();
+    //   py = candidate->Momentum.Py ();
+    //   pz = candidate->Momentum.Pz ();
+    //   pt = candidate->Momentum.Pt ();
+    //
+    //   // -- solve for delta: d0' = ( (x+delta)*py' - (y+delta)*px' )/pt'
+    //
+    //   candidate->InitialPosition.SetX (x + ((px * y - py * x + d0 * pt) / (py - px)));
+    //   candidate->InitialPosition.SetY (y + ((px * y - py * x + d0 * pt) / (py - px)));
+    //   x = candidate->InitialPosition.X ();
+    //   y = candidate->InitialPosition.Y ();
+    //   candidate->InitialPosition.SetZ (z + ((pz * (px * (x - beamSpotPosition.X ()) + py * (y - beamSpotPosition.Y ())) + pt * pt * (dz - z)) / (pt * pt)));
+    //
+    //   candidate->InitialPosition.SetT(t);
+    //
+    //   candidate->ErrorP = pError;
+    //   candidate->ErrorCtgTheta = ctgThetaError;
+    //   candidate->ErrorPhi = phiError;
+    //   candidate->ErrorPT = ptError (p, ctgTheta, pError, ctgThetaError);
+    //   candidate->TrackResolution = pError/p;
+    // }
 
-      if(p < 0.0) continue;
-      while (phi > TMath::Pi ()) phi -= TMath::TwoPi ();
-      while (phi <= -TMath::Pi ()) phi += TMath::TwoPi ();
+    candidate->Xd = d0 * TMath::Sin(phi);
+    candidate->Yd = - d0 * TMath::Cos(phi);
+    candidate->Zd = candidate->DZ;
 
-
-      candidate->P = p;
-      candidate->CtgTheta = ctgTheta;
-      candidate->Phi = phi;
-
-      theta = TMath::ACos(ctgTheta / TMath::Sqrt (1.0 + ctgTheta * ctgTheta));
-      candidate->Momentum.SetPx (p * TMath::Cos (phi) * TMath::Sin (theta));
-      candidate->Momentum.SetPy (p * TMath::Sin (phi) * TMath::Sin (theta));
-      candidate->Momentum.SetPz (p * TMath::Cos (theta));
-      candidate->Momentum.SetE (candidate->Momentum.Pt () * TMath::CosH (eta));
-      candidate->PT = candidate->Momentum.Pt ();
-
-      x = position.X ();
-      y = position.Y ();
-      z = position.Z ();
-      t = position.T ();
-      px = candidate->Momentum.Px ();
-      py = candidate->Momentum.Py ();
-      pz = candidate->Momentum.Pz ();
-      pt = candidate->Momentum.Pt ();
-
-      // -- solve for delta: d0' = ( (x+delta)*py' - (y+delta)*px' )/pt'
-
-      candidate->InitialPosition.SetX (x + ((px * y - py * x + d0 * pt) / (py - px)));
-      candidate->InitialPosition.SetY (y + ((px * y - py * x + d0 * pt) / (py - px)));
-      x = candidate->InitialPosition.X ();
-      y = candidate->InitialPosition.Y ();
-      candidate->InitialPosition.SetZ (z + ((pz * (px * (x - beamSpotPosition.X ()) + py * (y - beamSpotPosition.Y ())) + pt * pt * (dz - z)) / (pt * pt)));
-
-      candidate->InitialPosition.SetT(t);
-
-      candidate->ErrorP = pError;
-      candidate->ErrorCtgTheta = ctgThetaError;
-      candidate->ErrorPhi = phiError;
-      candidate->ErrorPT = ptError (p, ctgTheta, pError, ctgThetaError);
-      candidate->TrackResolution = pError/p;
-    }
+    const Double_t c_light = 2.99792458E8;
+    candidate->Td = -9999*c_light*1E-3;
 
     candidate->AddCandidate(mother);
     fOutputArray->Add(candidate);

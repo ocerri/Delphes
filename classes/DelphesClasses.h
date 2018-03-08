@@ -590,6 +590,10 @@ public:
   Float_t Td;
   Float_t Ld;
 
+  // Vertexing variables
+
+  Float_t VertexingWeight;
+
   // tracking resolution
 
   Float_t TrackResolution;

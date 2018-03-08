@@ -25,6 +25,7 @@
  *  oriented along the z-axis.
  *
  *  \author P. Demin - UCL, Louvain-la-Neuve
+ *  \author O. Cerri - Caltech
  *
  */
 
@@ -291,7 +292,6 @@ void ParticlePropagator::Process()
       {
         Double_t alpha = -(fRadius*fRadius - r*r - r_c*r_c)/(2*fabs(r)*r_c);
         alpha = fabs(TMath::ACos(alpha));
-
         Double_t t_r = td + alpha/fabs(omega);
 
         t = TMath::Min(t_r, t_z);

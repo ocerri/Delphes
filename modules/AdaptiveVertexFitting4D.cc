@@ -3,6 +3,21 @@
  *  Cluster vertices from tracks using deterministic annealing and timing information
  *
  *  \authors O. Cerri
+
+Example for delphes card:
+ ##################################
+ # Vertex cluster fitting
+ ##################################
+
+ module AdaptiveVertexFitting4D AdaptiveVertexFitting4D {
+   set InputArray VertexFinderDAClusterizerZT/vertices
+
+   set OutputArray tracks
+   set VertexOutputArray vertices
+
+   set Verbose 0
+ }
+
  *
  */
 

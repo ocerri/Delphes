@@ -99,7 +99,7 @@ void VertexFinderDAClusterizerZT::Init()
   fDzCutOff        = GetDouble("DzCutOff", 40);      // For the moment 3*DzCutOff is hard cut off for the considered tracks
   fD0CutOff        = GetDouble("D0CutOff", .5);       // d0/sigma_d0, used to compute the pi (weight) of the track
   fDtCutOff        = GetDouble("DtCutOff", 160);     // [ps], 3*DtCutOff is hard cut off for tracks
-  fPtMin           = GetDouble("PtMin", 0.6);        // Minimum pt accepted for tracks
+  fPtMin           = GetDouble("PtMin", 0.5);        // Minimum pt accepted for tracks
   fPtMax           = GetDouble("PtMax", 50);        // Maximum pt accepted for tracks
 
 
@@ -196,45 +196,45 @@ void VertexFinderDAClusterizerZT::Process()
     {
      cout << Form("Cluster %d has %d tracks ", k, candidate->GetCandidates()->GetEntriesFast()) << endl;
     }
+    if(candidate->ClusterNDF>0)
+    {
+      // Estimate the vertex resolution
+      // loop over tracks belonging to this vertex
+      TIter it1(candidate->GetCandidates());
+      it1.Reset();
 
+      Candidate *track;
+      double sum_Dt_2 = 0;
+      double sum_Dz_2 = 0;
+      double sum_wt = 0;
+      double sum_wz = 0;
+      while((track = static_cast<Candidate*>(it1.Next())))
+      {
+        double dz = candidate->Position.Z() - track->Zd;
+        double dt = candidate->Position.T() - track->Td;
 
-   //  // Somehow fit the vertex from the tracks now
-   //  // loop over tracks belonging to this vertex
-   //  TIter it1(candidate->GetCandidates());
-   //  it1.Reset();
-   //
-   //  Candidate *track;
-   //  int n_tr = 0
-   //  while((track = static_cast<Candidate*>(it1.Next())))
-   //  {
-   //    n_tr++;
-   //
-   //    double t = track->InitialPosition.T()/c_light;
-   //    double dt = track->ErrorT/c_light;
-   //    const double time = t;
-   //    const double inverr = 1.0/dt;
-   //    meantime += time*inverr;
-   //    expv_x2  += time*time*inverr;
-   //    normw    += inverr;
-   //
-   //    // compute error position TBC
-   //    const double pt = track->Momentum.Pt();
-   //    const double z = track->DZ/10.0;
-   //    const double err_pt = track->ErrorPT;
-   //    const double err_z = track->ErrorDZ;
-   //
-   //    const double wi = (pt/(err_pt*err_z))*(pt/(err_pt*err_z));
-   //    meanpos += z*wi;
-   //
-   //    meanerr2 += err_z*err_z*wi;
-   //    normpos += wi;
-   //    sumpt2 += pt*pt;
-   //  }
-   //
-   //  candidate->PositionError.SetXYZT(0.0, 0.0, errpos*10.0 , errtime*c_light);
-   //
-    fVertexOutputArray->Add(candidate);
-    k++;
+        double wz = track->VertexingWeight/(track->ErrorDZ*track->ErrorDZ);
+        double wt = track->VertexingWeight/(track->ErrorT*track->ErrorT);
+
+        sum_Dt_2 += wt*dt*dt;
+        sum_Dz_2 += wz*dz*dz;
+        sum_wt += wt;
+        sum_wz += wz;
+      }
+
+      double sigma_z = sqrt(sum_Dz_2/sum_wz);
+      double sigma_t = sqrt(sum_Dt_2/sum_wt);
+      candidate->PositionError.SetXYZT(0.0, 0.0, sigma_z , sigma_t);
+      if(fVerbose > 3 || 1)
+      {
+        cout << "k: " << k << endl;
+        cout << "Sigma z: " << sigma_z*1E3 << " um" << endl;
+        cout << "Sigma t: " << sigma_t*1E9/c_light << " ps" << endl;
+      }
+
+      fVertexOutputArray->Add(candidate);
+      k++;
+    }
    }// end of cluster loop
 
   delete ClusterArray;
@@ -497,8 +497,6 @@ void VertexFinderDAClusterizerZT::fill(tracks_t &tks)
 
   double z, t, dz2_o, dt2_o, w;
   double p, e, bz, pt;
-  // DEBUG PURPOSE
-  vector<double> td_true, zd_true;
   fItInputArray->Reset();
 
   while((candidate = static_cast<Candidate*>(fItInputArray->Next())))
@@ -508,12 +506,15 @@ void VertexFinderDAClusterizerZT::fill(tracks_t &tks)
     pt = candidate->Momentum.Pt();
     if(pt<fPtMin || pt>fPtMax) discard = 1;
 
+    // ------------- Compute cloasest approach Z ----------------
     z = candidate->DZ; // [mm]
+
+    candidate->Zd = candidate->DZ; //Set the cloasest approach z
     if(fabs(z) > 3*fDzCutOff) discard = 1;
 
-    //Temporary in v0 where the right mass is assumed
-    // double M = candidate->Mass;
-    double M = 0.139570; //Pion Mass
+    // ------------- Compute cloasest approach T ----------------
+    //Asumme pion mass which is the most common particle
+    double M = 0.139570;
     p = pt * sqrt(1 + candidate->CtgTheta*candidate->CtgTheta);
     e = sqrt(p*p + M*M);
     bz = pt * candidate->CtgTheta/e;
@@ -521,6 +522,8 @@ void VertexFinderDAClusterizerZT::fill(tracks_t &tks)
     t = candidate->Position.T()*1.E9/c_light; // from [mm] to [ps]
     if(t <= -9999) discard = 1;                    // Means that the time information has not been added
     t += (z - candidate->Position.Z())*1E9/(c_light*bz);
+
+    candidate->Td = t*1E-9*c_light;
     if(fabs(t) > 3*fDtCutOff) discard = 1;
 
     // auto genp = (Candidate*) candidate->GetCandidates()->At(0);
@@ -539,7 +542,7 @@ void VertexFinderDAClusterizerZT::fill(tracks_t &tks)
     dt2_o = candidate->ErrorT*1.E9/c_light; // [ps]
     dt2_o *= dt2_o;
     dt2_o += fVertexTSize*fVertexTSize; // [ps^2]
-    // Ideally we should also add the induced uncertantiy from dz and z_out. For the moment we compensae using a high value for vertex time.
+    // Ideally we should also add the induced uncertantiy from dz, z_out, pt, ctgthetaand all the other thing used above (total around 5ps). For the moment we compensae using a high value for vertex time.
     dt2_o = 1/dt2_o;
 
     if(fD0CutOff > 0 && candidate->ErrorD0 > 0)
@@ -553,6 +556,7 @@ void VertexFinderDAClusterizerZT::fill(tracks_t &tks)
     {
       w = 1;
     }
+    candidate->VertexingWeight = w;
 
 
     if(discard)
@@ -568,9 +572,6 @@ void VertexFinderDAClusterizerZT::fill(tracks_t &tks)
       tks.sum_w_o_dz2 += w * dz2_o;
       tks.sum_w += w;
       tks.addItem(z, t, dz2_o, dt2_o, &(*candidate), w, candidate->PID); //PROVA: rimuovi &(*---)
-
-      td_true.push_back(1E9*candidate->Td/c_light);
-      zd_true.push_back(candidate->Zd);
     }
 
   }
@@ -581,7 +582,7 @@ void VertexFinderDAClusterizerZT::fill(tracks_t &tks)
     cout << "M        z           dz        t            dt        w" << endl;
     for(unsigned int i = 0; i < tks.getSize(); i++)
     {
-      cout << Form("%d\t%1.1e(%1.1e)\t%1.1e\t%1.1e(%1.1e)\t%1.1e\t%1.1e", tks.PID[i], tks.z[i], zd_true[i], 1/sqrt(tks.dz2_o[i]), tks.t[i], td_true[i], 1/sqrt(tks.dt2_o[i]), tks.w[i]) << endl;
+      cout << Form("%d\t%1.1e\t%1.1e\t%1.1e\t%1.1e\t%1.1e", tks.PID[i], tks.z[i], 1/sqrt(tks.dz2_o[i]), tks.t[i], 1/sqrt(tks.dt2_o[i]), tks.w[i]) << endl;
     }
   }
 
