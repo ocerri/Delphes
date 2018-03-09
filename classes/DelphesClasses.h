@@ -590,7 +590,6 @@ public:
   Float_t Yd;
   Float_t Zd;
   Float_t Td;
-  Float_t Ld;
 
   // Vertexing variables
 

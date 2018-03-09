@@ -139,7 +139,7 @@ void TrackSmearing::Init()
   }
 
   // create output array
-
+  fBz = GetDouble("Bz", 0.0);
   fOutputArray = ExportArray(GetString("OutputArray", "stableParticles"));
 }
 
@@ -388,6 +388,14 @@ void TrackSmearing::Process()
     candidate->Zd = candidate->DZ;
 
     const Double_t c_light = 2.99792458E8;
+    // Recompute the new track length
+    Double_t rh = candidate->Momentum.Pt() / (candidate->Charge * fBz) * 1.0E9/c_light;        // in [m]
+    rh *= 1E3; // [mm]
+
+    Double_t xc = (d0 + rh)*TMath::Sin(phi);
+    Double_t yc = -(d0 + rh)*TMath::Cos(phi);
+
+
     candidate->Td = -9999*c_light*1E-3;
 
     candidate->AddCandidate(mother);

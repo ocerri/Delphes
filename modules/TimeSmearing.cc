@@ -100,26 +100,23 @@ void TimeSmearing::Process()
   fItInputArray->Reset();
   while((candidate = static_cast<Candidate*>(fItInputArray->Next())))
   {
-    const TLorentzVector &candidateInitialPosition = candidate->InitialPosition;
-    const TLorentzVector &candidateFinalPosition = candidate->Position;
-
-    ti = candidateInitialPosition.T()*1.0E-3/c_light;
-    tf = candidateFinalPosition.T()*1.0E-3/c_light;
+    ti = candidate->InitialPosition.T()*1.0E-3/c_light;
+    tf = candidate->Position.T()*1.0E-3/c_light;
 
     // apply smearing formula
-    if(fabs(candidateFinalPosition.Eta())<fEtaMax)
+    if(fabs(candidate->Position.Eta())<fEtaMax)
     {
       tf_smeared = tf + fTimeResolution*gRandom->Gaus(0, 1);
     }
     else continue;
 
-    double beta_particle = candidate->Momentum.P()/candidate->Momentum.E();
-    ti = tf_smeared - candidate->Ld*1.0E-3/(c_light*beta_particle);
+    // double beta_particle = candidate->Momentum.P()/candidate->Momentum.E();
+    // ti = tf_smeared - candidate->Ld*1.0E-3/(c_light*beta_particle);
 
     mother = candidate;
     candidate = static_cast<Candidate*>(candidate->Clone());
     candidate->AddCandidate(mother);
-    candidate->InitialPosition.SetT(ti*1.0E3*c_light);
+    candidate->InitialPosition.SetT((100+ti)*1.0E3*c_light);
     candidate->Position.SetT(tf_smeared*1.0E3*c_light);
     candidate->ErrorT = fTimeResolution*1.0E3*c_light;
 

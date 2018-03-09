@@ -310,9 +310,6 @@ void ParticlePropagator::Process()
       Double_t vz = pz*1.0E9 / c_light / gammam;
       //lenght of the path from production to tracker
       Double_t l = t * TMath::Sqrt(vz*vz + r*r*omega*omega);
-      //lenght of the path from closest approach to z axis to tracker`
-      Double_t ld = (t-td) * TMath::Sqrt(vz*vz + r*r*omega*omega);
-
 
       // store these variables before cloning
       candidate->D0 = d0*1.0E3;
@@ -325,6 +322,7 @@ void ParticlePropagator::Process()
 
       Candidate* mother = candidate;
       candidate = static_cast<Candidate*>(candidate->Clone());
+      candidate->AddCandidate(mother);
 
       candidate->InitialPosition = candidatePosition;
       candidate->Position.SetXYZT(x_t*1.0E3, y_t*1.0E3, z_t*1.0E3, candidatePosition.T() + t*c_light*1.0E3);
@@ -333,14 +331,16 @@ void ParticlePropagator::Process()
       candidate->Momentum = candidateMomentum;
 
       candidate->L = l*1.0E3;
-      candidate->Ld = ld*1.0E3;
+
+      Candidate* particle = static_cast<Candidate*>(candidate->GetCandidates()->At(0));
+      particle->L = candidate->L;
+      particle->PTD = t*1E12;
 
       candidate->Xd = xd*1.0E3;
       candidate->Yd = yd*1.0E3;
       candidate->Zd = zd*1.0E3;
       candidate->Td = candidatePosition.T() + td*c_light*1.0E3;
 
-      candidate->AddCandidate(mother);
 
       fOutputArray->Add(candidate);
       switch(TMath::Abs(candidate->PID))

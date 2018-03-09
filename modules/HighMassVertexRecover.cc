@@ -66,9 +66,12 @@ void HighMassVertexRecover::Init()
   }
   else
   {
-    fMassList.push_back(0.13957);
-    fMassList.push_back(0.49367);
-    fMassList.push_back(0.93827);
+    // Ordered by production probability in the SM
+    fMassList.push_back(0.13957);   //pion (+/-)
+    fMassList.push_back(0.49367);   // k (+/-)
+    fMassList.push_back(0.93827);   // proton
+    fMassList.push_back(0.00051);   //electron
+    fMassList.push_back(0.10558);   //muon
   }
 
   if(fVerbose)
@@ -144,7 +147,7 @@ void HighMassVertexRecover::Process()
         dz /= TMath::Hypot(track->ErrorDZ, vertex->PositionError.Z());
 
         Double_t sigd0 = fabs(track->D0)/track->ErrorD0;
-        if(fabs(dz) < fSigmaCompatibility && sigd0 < 2*fSigmaCompatibility)
+        if(fabs(dz) < fSigmaCompatibility && sigd0 < 3) //Should be done better...is assuming v_xy = 0 and the stat threatment is poor/wrong
         {
           UInt_t i = 0;
           UInt_t nv = vtx.size();
@@ -178,7 +181,7 @@ void HighMassVertexRecover::Process()
           {
             auto Tpair = ComputeCATime(track, fMassList[j]);
             double dt = vtx[i]->Position.T()*1.E9/c_light - Tpair.first;  // [ps]
-            dt /= TMath::Hypot(track->ErrorDZ, vtx[i]->PositionError.T())*1.E9/c_light;
+            dt /= TMath::Hypot(Tpair.second, vtx[i]->PositionError.T())*1.E9/c_light;
 
             if(fabs(dt)<fSigmaCompatibility)
             {
@@ -237,10 +240,14 @@ pair<Double_t, Double_t> HighMassVertexRecover::ComputeCATime(Candidate * tk, Do
 {
   Double_t p = tk->Momentum.Pt() * sqrt(1 + tk->CtgTheta*tk->CtgTheta);
   Double_t e = sqrt(p*p + m*m);
-  Double_t bz = tk->Momentum.Pt() * tk->CtgTheta/e;
 
   Double_t t = tk->Position.T()*1.E9/c_light; // from [mm] to [ps]
-  t += (tk->Zd - tk->Position.Z())*1E9/(c_light*bz);
+  //Full path length
+  t -= tk->L*1E9/(c_light*p/e);
+
+  // Only Z
+  // Double_t bz = tk->Momentum.Pt() * tk->CtgTheta/e;
+  // t += (tk->Zd - tk->Position.Z())*1E9/(c_light*bz);
 
   pair<Double_t, Double_t> out;
   out.first = t;

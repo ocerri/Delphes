@@ -284,7 +284,6 @@ void Candidate::Copy(TObject &obj) const
   object.PositionError = PositionError;
   object.Area = Area;
   object.L = L;
-  object.Ld = Ld;
   object.ErrorT = ErrorT;
   object.D0 = D0;
   object.ErrorD0 = ErrorD0;
@@ -302,6 +301,7 @@ void Candidate::Copy(TObject &obj) const
   object.Yd = Yd;
   object.Zd = Zd;
   object.Td = Td;
+  object.VertexingWeight = VertexingWeight;
   object.TrackResolution = TrackResolution;
   object.NCharged = NCharged;
   object.NNeutrals = NNeutrals;
@@ -318,8 +318,11 @@ void Candidate::Copy(TObject &obj) const
   object.SumPt = SumPt;
   object.ClusterIndex = ClusterIndex;
   object.ClusterNDF = ClusterNDF;
+  object.Chi2 = Chi2;
   object.ClusterSigma = ClusterSigma;
   object.SumPT2 = SumPT2;
+  object.BTVSumPT2 = BTVSumPT2;
+  object.GenSumPT2 = GenSumPT2;
 
   object.FracPt[0] = FracPt[0];
   object.FracPt[1] = FracPt[1];

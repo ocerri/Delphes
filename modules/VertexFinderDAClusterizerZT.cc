@@ -518,11 +518,16 @@ void VertexFinderDAClusterizerZT::fill(tracks_t &tks)
     candidate->Mass = M;
     p = pt * sqrt(1 + candidate->CtgTheta*candidate->CtgTheta);
     e = sqrt(p*p + M*M);
-    bz = pt * candidate->CtgTheta/e;
 
     t = candidate->Position.T()*1.E9/c_light; // from [mm] to [ps]
     if(t <= -9999) discard = 1;                    // Means that the time information has not been added
-    t += (z - candidate->Position.Z())*1E9/(c_light*bz);
+
+    // DEBUG Here backpropagete for the whole length and not noly for z. Could improve resolution
+    // bz = pt * candidate->CtgTheta/e;
+    // t += (z - candidate->Position.Z())*1E9/(c_light*bz);
+
+    // Use full path Length
+    t -= candidate->L*1E9/(c_light*p/e);
 
     candidate->Td = t*1E-9*c_light;
     if(fabs(t) > 3*fDtCutOff) discard = 1;
