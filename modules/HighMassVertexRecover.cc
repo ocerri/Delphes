@@ -181,7 +181,8 @@ void HighMassVertexRecover::Process()
           {
             auto Tpair = ComputeCATime(track, fMassList[j]);
             double dt = vtx[i]->Position.T()*1.E9/c_light - Tpair.first;  // [ps]
-            dt /= TMath::Hypot(Tpair.second, vtx[i]->PositionError.T())*1.E9/c_light;
+            // dt /= Tpair.second;
+            dt /= TMath::Hypot(Tpair.second, vtx[i]->PositionError.T()*1.E9/c_light);
 
             if(fabs(dt)<fSigmaCompatibility)
             {
@@ -190,6 +191,7 @@ void HighMassVertexRecover::Process()
               track->ClusterIndex = vtx[i]->ClusterIndex;
               track->InitialPosition.SetT(vtx[i]->Position.T());
               track->InitialPosition.SetZ(vtx[i]->Position.Z());
+              track->Td = Tpair.first * 1E-9 * c_light;
 
               vtx[i]->SumPT2 += track->Momentum.Pt()*track->Momentum.Pt();
               if(fVerbose>5)
@@ -208,15 +210,21 @@ void HighMassVertexRecover::Process()
 
         if(match == 0)
         {
-          Double_t beta_z = vtx[0]->Position.Z() - track->Position.Z();
-          beta_z /= vtx[0]->Position.T() - track->Position.T();
-
           Double_t p = track->Momentum.Pt() * sqrt(1 + track->CtgTheta*track->CtgTheta);
-          Double_t e = track->Momentum.Pt() * track->CtgTheta / beta_z;
+          // Only Z
+          // Double_t beta_z = vtx[0]->Position.Z() - track->Position.Z();
+          // beta_z /= vtx[0]->Position.T() - track->Position.T();
+          // Double_t e = track->Momentum.Pt() * track->CtgTheta / beta_z;
+
+          //Full path length
+          Double_t beta = track->L / (vtx[0]->Position.T() - track->Position.T());
+          Double_t e = p / beta;
+
           track->Mass = sqrt(e*e - p*p);
           track->ClusterIndex = vtx[0]->ClusterIndex;
           track->InitialPosition.SetT(vtx[0]->Position.T());
           track->InitialPosition.SetZ(vtx[0]->Position.Z());
+          track->Td = vtx[0]->Position.T();
 
           vtx[0]->SumPT2 += track->Momentum.Pt()*track->Momentum.Pt();
           if(fVerbose>5)

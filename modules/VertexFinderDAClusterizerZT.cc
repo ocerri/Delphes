@@ -87,9 +87,9 @@ void VertexFinderDAClusterizerZT::Init()
   fMaxIterations   = GetInt("MaxIterations", 100);
   fMaxVertexNumber = GetInt("MaxVertexNumber", 500);
 
-  fBetaMax         = GetDouble("BetaMax", 1.);
-  fBetaPurge       = GetDouble("BetaPurge", 0.5);
-  fBetaStop        = GetDouble("BetaStop", 0.25);
+  fBetaMax         = GetDouble("BetaMax", 1.5);
+  fBetaPurge       = GetDouble("BetaPurge", 1.);
+  fBetaStop        = GetDouble("BetaStop", 0.2);
 
   fVertexZSize     = GetDouble("VertexZSize", 0.1); //in mm
   fVertexTSize     = 1E12*GetDouble("VertexTimeSize", 15E-12); //Convert from [s] to [ps]
@@ -106,7 +106,8 @@ void VertexFinderDAClusterizerZT::Init()
   fD2UpdateLim     = GetDouble("D2UpdateLim", .5);   // ((dz/ZSize)^2+(dt/TSize)^2)/nv limit for merging vertices
   fD2Merge         = GetDouble("D2Merge", 4.0);      // (dz/ZSize)^2+(dt/TSize)^2 limit for merging vertices
   fMuOutlayer      = GetDouble("MuOutlayer", 4);     // Outlayer rejection exponent
-  fMinTrackProb    = GetDouble("fMinTrackProb", 0.6);     // Outlayer rejection exponent
+  fMinTrackProb    = GetDouble("MinTrackProb", 0.6); // Minimum probability to be assigned at a vertex
+  fMinNTrack       = GetInt("MinNTrack", 10);        // Minimum number of tracks per vertex
 
   fInputArray = ImportArray(GetString("InputArray", "TrackSmearing/tracks"));
   fItInputArray = fInputArray->MakeIterator();
@@ -357,17 +358,20 @@ void VertexFinderDAClusterizerZT::clusterize(TObjArray &clusters)
     beta /= fCoolingFactor;
     if(beta > fBetaPurge) beta = fBetaPurge;
     unsigned int i_pu = 0;
-    while( purge(vtx, tks, rho0, beta, fMinTrackProb) )
+    for(int min_trk = 2; min_trk<=fMinNTrack; min_trk++)
     {
-      unsigned int niter=0;
-      double delta2 = 0;
-      do  {
-        delta2 = update(beta, tks, vtx, rho0);
-        niter++;
+      while( purge(vtx, tks, rho0, beta, fMinTrackProb, min_trk) )
+      {
+        unsigned int niter=0;
+        double delta2 = 0;
+        do  {
+          delta2 = update(beta, tks, vtx, rho0);
+          niter++;
+        }
+        while (delta2 > fD2UpdateLim &&  niter < fMaxIterations);
+        if( fVerbose > 10 ) plot_status(beta, vtx, tks, i_pu, Form("Eprg%d",min_trk));
+        i_pu++;
       }
-      while (delta2 > fD2UpdateLim &&  niter < fMaxIterations);
-      if( fVerbose > 10 ) plot_status(beta, vtx, tks, i_pu, "Eprg");
-      i_pu++;
     }
 
     unsigned int n_it = 0;
@@ -495,19 +499,16 @@ void VertexFinderDAClusterizerZT::fill(tracks_t &tks)
 
   Candidate *candidate;
 
-  double z, t, dz2_o, dt2_o, w;
-  double p, e, bz, pt;
   fItInputArray->Reset();
-
   while((candidate = static_cast<Candidate*>(fItInputArray->Next())))
   {
     unsigned int discard = 0;
 
-    pt = candidate->Momentum.Pt();
+    double pt = candidate->Momentum.Pt();
     if(pt<fPtMin || pt>fPtMax) discard = 1;
 
     // ------------- Compute cloasest approach Z ----------------
-    z = candidate->DZ; // [mm]
+    double z = candidate->DZ; // [mm]
 
     candidate->Zd = candidate->DZ; //Set the cloasest approach z
     if(fabs(z) > 3*fDzCutOff) discard = 1;
@@ -516,14 +517,14 @@ void VertexFinderDAClusterizerZT::fill(tracks_t &tks)
     //Asumme pion mass which is the most common particle
     double M = 0.139570;
     candidate->Mass = M;
-    p = pt * sqrt(1 + candidate->CtgTheta*candidate->CtgTheta);
-    e = sqrt(p*p + M*M);
+    double p = pt * sqrt(1 + candidate->CtgTheta*candidate->CtgTheta);
+    double e = sqrt(p*p + M*M);
 
-    t = candidate->Position.T()*1.E9/c_light; // from [mm] to [ps]
+    double t = candidate->Position.T()*1.E9/c_light; // from [mm] to [ps]
     if(t <= -9999) discard = 1;                    // Means that the time information has not been added
 
     // DEBUG Here backpropagete for the whole length and not noly for z. Could improve resolution
-    // bz = pt * candidate->CtgTheta/e;
+    // double bz = pt * candidate->CtgTheta/e;
     // t += (z - candidate->Position.Z())*1E9/(c_light*bz);
 
     // Use full path Length
@@ -540,23 +541,24 @@ void VertexFinderDAClusterizerZT::fill(tracks_t &tks)
     // cout << genp->Momentum.E() << " -- " << e << endl;
     // cout << Form("bz_true: %.4f -- bz_gen: %.4f", genp->Momentum.Pz()/genp->Momentum.E(), bz) << endl;
 
-    dz2_o = candidate->ErrorDZ*candidate->ErrorDZ;
+    double dz2_o = candidate->ErrorDZ*candidate->ErrorDZ;
     dz2_o += fVertexZSize*fVertexZSize;
     // when needed add beam spot width (x-y)?? mha?
     dz2_o = 1/dz2_o; //Multipling is faster than dividing all the times
 
-    dt2_o = candidate->ErrorT*1.E9/c_light; // [ps]
+    double dt2_o = candidate->ErrorT*1.E9/c_light; // [ps]
     dt2_o *= dt2_o;
     dt2_o += fVertexTSize*fVertexTSize; // [ps^2]
     // Ideally we should also add the induced uncertantiy from dz, z_out, pt, ctgthetaand all the other thing used above (total around 5ps). For the moment we compensae using a high value for vertex time.
     dt2_o = 1/dt2_o;
 
+    double w;
     if(fD0CutOff > 0 && candidate->ErrorD0 > 0)
     {
       double d0_sig = fabs(candidate->D0/candidate->ErrorD0);
       w = exp(d0_sig*d0_sig - fD0CutOff*fD0CutOff);
       w = 1./(1. + w);
-      if (w < 1E-10) discard = 1;
+      if (w < 1E-4) discard = 1;
     }
     else
     {
@@ -977,7 +979,7 @@ vector<double> VertexFinderDAClusterizerZT::Compute_pk_exp_mBetaE(double beta, v
 
 //------------------------------------------------------------------------------
 // Eliminate clusters with only one significant/unique track
-bool VertexFinderDAClusterizerZT::purge(vertex_t & vtx, tracks_t & tks, double & rho0, const double beta, double min_prob)
+bool VertexFinderDAClusterizerZT::purge(vertex_t & vtx, tracks_t & tks, double & rho0, const double beta, double min_prob, double min_trk)
 {
   const unsigned int nv = vtx.getSize();
   const unsigned int nt = tks.getSize();
@@ -1015,7 +1017,7 @@ bool VertexFinderDAClusterizerZT::purge(vertex_t & vtx, tracks_t & tks, double &
       if( ( p > pcut ) & ( tks.w[i] > 0 ) ) nUnique++;
     }
 
-    if ((nUnique < 2) && (sump < sumpmin)) {
+    if ((nUnique < min_trk) && (sump < sumpmin)) {
       sumpmin = sump;
       k0 = k;
     }

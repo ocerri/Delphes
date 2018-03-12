@@ -1,5 +1,7 @@
+cards/validation_delphes_card_CMS.tcl
 MinBias_pp14TeV_100k.pileup
 tmp
+validation
 CaloGrid
 DelphesHepMC
 DelphesLHEF
