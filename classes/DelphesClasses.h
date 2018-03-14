@@ -183,22 +183,22 @@ public:
   Float_t Y; // vertex position (y component)
   Float_t Z; // vertex position (z component)
 
-  Double_t ErrorT; // vertex position error (t component)
-  Double_t ErrorX; // vertex position error (x component)
-  Double_t ErrorY; // vertex position error (y component)
-  Double_t ErrorZ; // vertex position error (z component)
+  Float_t ErrorT; // vertex position error (t component)
+  Float_t ErrorX; // vertex position error (x component)
+  Float_t ErrorY; // vertex position error (y component)
+  Float_t ErrorZ; // vertex position error (z component)
 
   Int_t Index; // vertex index
   Int_t NDF; // number of degrees of freedom
-  Double_t Chi2;
+  Float_t Chi2;
 
-  Double_t Sigma; // vertex position (z component) error
-  Double_t SumPT2; // sum pt^2 of tracks attached to the vertex
-  Double_t SumPT;  // sum pt of tracks attached to the vertex
-  Double_t GenSumPT2; // sum pt^2 of gen tracks attached to the vertex
+  Float_t Sigma; // vertex position (z component) error
+  Float_t SumPT2; // sum pt^2 of tracks attached to the vertex
+  Float_t SumPT;  // sum pt of tracks attached to the vertex
+  Float_t GenSumPT2; // sum pt^2 of gen tracks attached to the vertex
 
-  Double_t GenDeltaZ; // distance in z to closest generated vertex
-  Double_t BTVSumPT2; // sum pt^2 of tracks attached to the secondary vertex
+  Float_t GenDeltaZ; // distance in z to closest generated vertex
+  Float_t BTVSumPT2; // sum pt^2 of tracks attached to the secondary vertex
 
   TRefArray Constituents; // references to constituents
 
@@ -415,64 +415,64 @@ public:
 
 class Track: public SortableObject
 {
-public:
-  Int_t PID; // HEP ID number
+  public:
+    Int_t PID; // HEP ID number
 
-  Int_t Charge; // track charge
+    Int_t Charge; // track charge
 
-  Double_t Mass; // track mass
+    Double_t Mass; // track mass
 
-  Float_t P; // track momentum
-  Float_t PT; // track transverse momentum
-  Float_t Eta; // track pseudorapidity
-  Float_t Phi; // track azimuthal angle
-  Float_t CtgTheta; // track cotangent of theta
+    Float_t P; // track momentum
+    Float_t PT; // track transverse momentum
+    Float_t Eta; // track pseudorapidity
+    Float_t Phi; // track azimuthal angle
+    Float_t CtgTheta; // track cotangent of theta
 
-  Float_t EtaOuter; // track pseudorapidity at the tracker edge
-  Float_t PhiOuter; // track azimuthal angle at the tracker edge
+    Float_t EtaOuter; // track pseudorapidity at the tracker edge
+    Float_t PhiOuter; // track azimuthal angle at the tracker edge
 
-  Float_t T; // track vertex position (t component)
-  Float_t X; // track vertex position (x component)
-  Float_t Y; // track vertex position (y component)
-  Float_t Z; // track vertex position (z component)
+    Float_t T; // track vertex position (t component)
+    Float_t X; // track vertex position (x component)
+    Float_t Y; // track vertex position (y component)
+    Float_t Z; // track vertex position (z component)
 
-  Float_t TOuter; // track position (t component) at the tracker edge
-  Float_t XOuter; // track position (x component) at the tracker edge
-  Float_t YOuter; // track position (y component) at the tracker edge
-  Float_t ZOuter; // track position (z component) at the tracker edge
+    Float_t TOuter; // track position (t component) at the tracker edge
+    Float_t XOuter; // track position (x component) at the tracker edge
+    Float_t YOuter; // track position (y component) at the tracker edge
+    Float_t ZOuter; // track position (z component) at the tracker edge
 
-  Float_t Xd; // X coordinate of point of closest approach to z axis
-  Float_t Yd; // Y coordinate of point of closest approach to z axis
-  Float_t Zd; // Z coordinate of point of closest approach to z axis
-  Float_t Td; // T coordinate of ...
+    Float_t Xd; // X coordinate of point of closest approach to z axis
+    Float_t Yd; // Y coordinate of point of closest approach to z axis
+    Float_t Zd; // Z coordinate of point of closest approach to z axis
+    Float_t Td; // T coordinate of ...
 
-  Float_t tof_gen;  //Time of flight MC
-  Float_t tof_reco; //Time of flight reco
+    Float_t tof_gen;  //Time of flight MC
+    Float_t tof_reco; //Time of flight reco
 
-  Float_t L; // track path length
-  Float_t D0; // track transverse impact parameter
-  Float_t DZ; // track longitudinal impact parameter
+    Float_t L; // track path length
+    Float_t D0; // track transverse impact parameter
+    Float_t DZ; // track longitudinal impact parameter
 
-  Float_t ErrorP; // track momentum error
-  Float_t ErrorPT; // track transverse momentum error
-  Float_t ErrorPhi; // track azimuthal angle error
-  Float_t ErrorCtgTheta; // track cotangent of theta error
+    Float_t ErrorP; // track momentum error
+    Float_t ErrorPT; // track transverse momentum error
+    Float_t ErrorPhi; // track azimuthal angle error
+    Float_t ErrorCtgTheta; // track cotangent of theta error
 
-  Float_t ErrorTOut; // time measurement error
-  Float_t ErrorZOut; // Z out measurement error
-  Float_t ErrorD0; // track transverse impact parameter error
-  Float_t ErrorDZ; // track longitudinal impact parameter error
+    Float_t ErrorTOut; // time measurement error
+    Float_t ErrorZOut; // Z out measurement error
+    Float_t ErrorD0; // track transverse impact parameter error
+    Float_t ErrorDZ; // track longitudinal impact parameter error
 
-  TRef Particle; // reference to generated particle
+    TRef Particle; // reference to generated particle
 
-  Int_t VertexIndex; // reference to vertex
+    Int_t VertexIndex; // reference to vertex
 
-  static CompBase *fgCompare; //!
-  const CompBase *GetCompare() const { return fgCompare; }
+    static CompBase *fgCompare; //!
+    const CompBase *GetCompare() const { return fgCompare; }
 
-  TLorentzVector P4() const;
+    TLorentzVector P4() const;
 
-  ClassDef(Track, 3)
+    ClassDef(Track, 3)
 };
 
 //---------------------------------------------------------------------------
@@ -534,141 +534,141 @@ class Candidate: public SortableObject
 {
   friend class DelphesFactory;
 
-public:
-  Candidate();
+  public:
+    Candidate();
 
-  Int_t PID;
+    Int_t PID;
 
-  Int_t Status;
-  Int_t M1, M2, D1, D2;
+    Int_t Status;
+    Int_t M1, M2, D1, D2;
 
-  Int_t Charge;
+    Int_t Charge;
 
-  Float_t Mass;
+    Float_t Mass;
 
-  Int_t IsPU;
-  Int_t IsRecoPU;
+    Int_t IsPU;
+    Int_t IsRecoPU;
 
-  Int_t IsConstituent;
+    Int_t IsConstituent;
 
-  Int_t IsFromConversion;
+    Int_t IsFromConversion;
 
-  UInt_t Flavor;
-  UInt_t FlavorAlgo;
-  UInt_t FlavorPhys;
+    UInt_t Flavor;
+    UInt_t FlavorAlgo;
+    UInt_t FlavorPhys;
 
-  UInt_t BTag;
-  UInt_t BTagAlgo;
-  UInt_t BTagPhys;
+    UInt_t BTag;
+    UInt_t BTagAlgo;
+    UInt_t BTagPhys;
 
-  UInt_t TauTag;
+    UInt_t TauTag;
 
-  Float_t Eem;
-  Float_t Ehad;
+    Float_t Eem;
+    Float_t Ehad;
 
-  Float_t Edges[4];
-  Float_t DeltaEta;
-  Float_t DeltaPhi;
+    Float_t Edges[4];
+    Float_t DeltaEta;
+    Float_t DeltaPhi;
 
-  TLorentzVector Momentum, Position, InitialPosition, PositionError, Area;
+    TLorentzVector Momentum, Position, InitialPosition, PositionError, Area;
 
-  Float_t L; // path length
-  Float_t ErrorT; // path length
-  Float_t D0;
-  Float_t ErrorD0;
-  Float_t DZ;
-  Float_t ErrorDZ;
-  Float_t P;
-  Float_t ErrorP;
-  Float_t PT;
-  Float_t ErrorPT;
-  Float_t CtgTheta;
-  Float_t ErrorCtgTheta;
-  Float_t Phi;
-  Float_t ErrorPhi;
+    Float_t L; // path length
+    Float_t ErrorT; // path length
+    Float_t D0;
+    Float_t ErrorD0;
+    Float_t DZ;
+    Float_t ErrorDZ;
+    Float_t P;
+    Float_t ErrorP;
+    Float_t PT;
+    Float_t ErrorPT;
+    Float_t CtgTheta;
+    Float_t ErrorCtgTheta;
+    Float_t Phi;
+    Float_t ErrorPhi;
 
-  Float_t Xd;
-  Float_t Yd;
-  Float_t Zd;
-  Float_t Td;
+    Float_t Xd;
+    Float_t Yd;
+    Float_t Zd;
+    Float_t Td;
 
-  // Vertexing variables
+    // Vertexing variables
 
-  Float_t VertexingWeight;
+    Float_t VertexingWeight;
 
-  // tracking resolution
+    // tracking resolution
 
-  Float_t TrackResolution;
+    Float_t TrackResolution;
 
-  // PileUpJetID variables
+    // PileUpJetID variables
 
-  Int_t NCharged;
-  Int_t NNeutrals;
-  Float_t Beta;
-  Float_t BetaStar;
-  Float_t MeanSqDeltaR;
-  Float_t PTD;
-  Float_t FracPt[5];
+    Int_t NCharged;
+    Int_t NNeutrals;
+    Float_t Beta;
+    Float_t BetaStar;
+    Float_t MeanSqDeltaR;
+    Float_t PTD;
+    Float_t FracPt[5];
 
-  // Timing information
+    // Timing information
 
-  Int_t NTimeHits;
-  std::vector< std::pair< Float_t, Float_t > > ECalEnergyTimePairs;
+    Int_t NTimeHits;
+    std::vector< std::pair< Float_t, Float_t > > ECalEnergyTimePairs;
 
-  // Isolation variables
+    // Isolation variables
 
-  Float_t IsolationVar;
-  Float_t IsolationVarRhoCorr;
-  Float_t SumPtCharged;
-  Float_t SumPtNeutral;
-  Float_t SumPtChargedPU;
-  Float_t SumPt;
+    Float_t IsolationVar;
+    Float_t IsolationVarRhoCorr;
+    Float_t SumPtCharged;
+    Float_t SumPtNeutral;
+    Float_t SumPtChargedPU;
+    Float_t SumPt;
 
-  // vertex variables
+    // vertex variables
 
-  Int_t ClusterIndex;
-  Int_t ClusterNDF;
-  Double_t Chi2;
-  Double_t ClusterSigma;
-  Double_t SumPT2;
-  Double_t BTVSumPT2;
-  Double_t GenDeltaZ;
-  Double_t GenSumPT2;
+    Int_t ClusterIndex;
+    Int_t ClusterNDF;
+    Double_t Chi2;
+    Double_t ClusterSigma;
+    Double_t SumPT2;
+    Double_t BTVSumPT2;
+    Double_t GenDeltaZ;
+    Double_t GenSumPT2;
 
-  // N-subjettiness variables
+    // N-subjettiness variables
 
-  Float_t Tau[5];
+    Float_t Tau[5];
 
-  // Other Substructure variables
+    // Other Substructure variables
 
-  TLorentzVector TrimmedP4[5]; // first entry (i = 0) is the total Trimmed Jet 4-momenta and from i = 1 to 4 are the trimmed subjets 4-momenta
-  TLorentzVector PrunedP4[5]; // first entry (i = 0) is the total Pruned Jet 4-momenta and from i = 1 to 4 are the pruned subjets 4-momenta
-  TLorentzVector SoftDroppedP4[5]; // first entry (i = 0) is the total SoftDropped Jet 4-momenta and from i = 1 to 4 are the pruned subjets 4-momenta
+    TLorentzVector TrimmedP4[5]; // first entry (i = 0) is the total Trimmed Jet 4-momenta and from i = 1 to 4 are the trimmed subjets 4-momenta
+    TLorentzVector PrunedP4[5]; // first entry (i = 0) is the total Pruned Jet 4-momenta and from i = 1 to 4 are the pruned subjets 4-momenta
+    TLorentzVector SoftDroppedP4[5]; // first entry (i = 0) is the total SoftDropped Jet 4-momenta and from i = 1 to 4 are the pruned subjets 4-momenta
 
-  Int_t NSubJetsTrimmed; // number of subjets trimmed
-  Int_t NSubJetsPruned; // number of subjets pruned
-  Int_t NSubJetsSoftDropped; // number of subjets soft-dropped
+    Int_t NSubJetsTrimmed; // number of subjets trimmed
+    Int_t NSubJetsPruned; // number of subjets pruned
+    Int_t NSubJetsSoftDropped; // number of subjets soft-dropped
 
 
-  static CompBase *fgCompare; //!
-  const CompBase *GetCompare() const { return fgCompare; }
+    static CompBase *fgCompare; //!
+    const CompBase *GetCompare() const { return fgCompare; }
 
-  void AddCandidate(Candidate *object);
-  TObjArray *GetCandidates();
+    void AddCandidate(Candidate *object);
+    TObjArray *GetCandidates();
 
-  Bool_t Overlaps(const Candidate *object) const;
+    Bool_t Overlaps(const Candidate *object) const;
 
-  virtual void Copy(TObject &object) const;
-  virtual TObject *Clone(const char *newname = "") const;
-  virtual void Clear(Option_t* option = "");
+    virtual void Copy(TObject &object) const;
+    virtual TObject *Clone(const char *newname = "") const;
+    virtual void Clear(Option_t* option = "");
 
-private:
-  DelphesFactory *fFactory; //!
-  TObjArray *fArray; //!
+  private:
+    DelphesFactory *fFactory; //!
+    TObjArray *fArray; //!
 
-  void SetFactory(DelphesFactory *factory) { fFactory = factory; }
+    void SetFactory(DelphesFactory *factory) { fFactory = factory; }
 
-  ClassDef(Candidate, 5)
+    ClassDef(Candidate, 5)
 };
 
 #endif // DelphesClasses_h
