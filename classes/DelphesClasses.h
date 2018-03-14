@@ -194,6 +194,7 @@ public:
 
   Double_t Sigma; // vertex position (z component) error
   Double_t SumPT2; // sum pt^2 of tracks attached to the vertex
+  Double_t SumPT;  // sum pt of tracks attached to the vertex
   Double_t GenSumPT2; // sum pt^2 of gen tracks attached to the vertex
 
   Double_t GenDeltaZ; // distance in z to closest generated vertex

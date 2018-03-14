@@ -194,6 +194,7 @@ void HighMassVertexRecover::Process()
               track->Td = Tpair.first * 1E-9 * c_light;
 
               vtx[i]->SumPT2 += track->Momentum.Pt()*track->Momentum.Pt();
+              vtx[i]->SumPt += track->Momentum.Pt();
               if(fVerbose>5)
               {
                 cout << "SM VTX found at " << i << ". dt = " << dt << "sigma" << endl;
@@ -227,6 +228,7 @@ void HighMassVertexRecover::Process()
           track->Td = vtx[0]->Position.T();
 
           vtx[0]->SumPT2 += track->Momentum.Pt()*track->Momentum.Pt();
+          vtx[0]->SumPt += track->Momentum.Pt();
           if(fVerbose>5)
           {
             cout << "BSM VTX fitted:" << endl;

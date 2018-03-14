@@ -257,6 +257,7 @@ void TreeWriter::ProcessVertices(ExRootTreeBranch *branch, TObjArray *array)
 
     entry->Sigma = candidate->ClusterSigma;
     entry->SumPT2 = candidate->SumPT2;
+    entry->SumPT = candidate->SumPt;
     entry->BTVSumPT2 = candidate->BTVSumPT2;
     entry->GenDeltaZ = candidate->GenDeltaZ;
     entry->GenSumPT2 = candidate->GenSumPT2;
@@ -374,7 +375,7 @@ void TreeWriter::ProcessTracks(ExRootTreeBranch *branch, TObjArray *array)
 
     particle = static_cast<Candidate*>(candidate->GetCandidates()->At(0));
     entry->tof_gen  = 1E-3*particle->L/(c_light*particle->Momentum.P()/particle->Momentum.E());
-    
+
     const TLorentzVector &initialPosition = candidate->InitialPosition;
     entry->X = initialPosition.X();
     entry->Y = initialPosition.Y();
