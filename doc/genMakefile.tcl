@@ -208,8 +208,9 @@ SrcSuf = cc
 PcmSuf = _rdict.pcm
 
 CXXFLAGS += $(ROOTCFLAGS) -Wno-write-strings -D_FILE_OFFSET_BITS=64 -DDROP_CGAL -I. -Iexternal -Iexternal/tcl
-DELPHES_LIBS = $(shell $(RC) --libs) -lEG $(SYSLIBS)
-DISPLAY_LIBS = $(shell $(RC) --evelibs) -lGuiHtml $(SYSLIBS)
+LIBS = -lRooFitCore -lRooFit -lMinuit -lHtml -lPyROOT -lFoam -lRooStats -lTreePlayer -lTMVA
+DELPHES_LIBS = $(shell $(RC) --libs) -lEG $(SYSLIBS) $(LIBS)
+DISPLAY_LIBS = $(shell $(RC) --evelibs) -lGuiHtml $(SYSLIBS) $(LIBS)
 
 ifneq ($(CMSSW_FWLITE_INCLUDE_PATH),)
 HAS_CMSSW = true
@@ -288,7 +289,7 @@ dictDeps {DISPLAY_DICT} {display/DisplayLinkDef.h}
 
 sourceDeps {DELPHES} {classes/*.cc} {modules/*.cc} {external/ExRootAnalysis/*.cc} {external/Hector/*.cc}
 
-sourceDeps {FASTJET} {modules/FastJet*.cc} {modules/RunPUPPI.cc} {external/PUPPI/*.cc} {external/fastjet/*.cc} {external/fastjet/tools/*.cc} {external/fastjet/plugins/*/*.cc} {external/fastjet/contribs/*/*.cc} 
+sourceDeps {FASTJET} {modules/FastJet*.cc} {modules/RunPUPPI.cc} {external/PUPPI/*.cc} {external/fastjet/*.cc} {external/fastjet/tools/*.cc} {external/fastjet/plugins/*/*.cc} {external/fastjet/contribs/*/*.cc}
 
 sourceDeps {DISPLAY} {display/*.cc}
 
