@@ -691,7 +691,7 @@ double VertexFinderDAClusterizerZT::update(double beta, tracks_t &tks, vertex_t 
       }
 
       double p_ygx = pk_exp_mBetaE[idx] / tks.Z[i];      //p(y|x), Gibbs distribution
-      if(isnan(p_ygx) || isinf(p_ygx) || p_ygx > 1)
+      if(std::isnan(p_ygx) || std::isinf(p_ygx) || p_ygx > 1)
       {
         cout << Form("%1.6e    %1.6e", pk_exp_mBetaE[idx], tks.Z[i]);
         throw std::invalid_argument(Form("p_ygx is %.8f", p_ygx));
@@ -740,7 +740,7 @@ double VertexFinderDAClusterizerZT::update(double beta, tracks_t &tks, vertex_t 
 
       double new_t = sw_t/sum_wt;
       double new_z = sw_z/sum_wz;
-      if(isnan(new_z) || isnan(new_t))
+      if(std::isnan(new_z) || std::isnan(new_t))
       {
         cout << endl << endl;
         cout << Form("t: %.3e   /   %.3e", sw_t, sum_wt) << endl;
