@@ -380,6 +380,7 @@ tmp/modules/ModulesDict.$(SrcSuf): \
 	modules/AdaptiveVertexFitting4D.h \
 	modules/VertexFinderDAClusterizerZT.h \
 	modules/HighMassVertexRecover.h \
+	modules/CandidateFilter.h \
 	modules/ExampleModule.h
 tmp/modules/ModulesDict$(PcmSuf): \
 	tmp/modules/ModulesDict.$(SrcSuf)
@@ -608,6 +609,15 @@ tmp/modules/BeamSpotFilter.$(ObjSuf): \
 tmp/modules/Calorimeter.$(ObjSuf): \
 	modules/Calorimeter.$(SrcSuf) \
 	modules/Calorimeter.h \
+	classes/DelphesClasses.h \
+	classes/DelphesFactory.h \
+	classes/DelphesFormula.h \
+	external/ExRootAnalysis/ExRootResult.h \
+	external/ExRootAnalysis/ExRootFilter.h \
+	external/ExRootAnalysis/ExRootClassifier.h
+tmp/modules/CandidateFilter.$(ObjSuf): \
+	modules/CandidateFilter.$(SrcSuf) \
+	modules/CandidateFilter.h \
 	classes/DelphesClasses.h \
 	classes/DelphesFactory.h \
 	classes/DelphesFormula.h \
@@ -1043,6 +1053,7 @@ DELPHES_OBJ +=  \
 	tmp/modules/BTagging.$(ObjSuf) \
 	tmp/modules/BeamSpotFilter.$(ObjSuf) \
 	tmp/modules/Calorimeter.$(ObjSuf) \
+	tmp/modules/CandidateFilter.$(ObjSuf) \
 	tmp/modules/Cloner.$(ObjSuf) \
 	tmp/modules/ConstituentFilter.$(ObjSuf) \
 	tmp/modules/Delphes.$(ObjSuf) \
@@ -1936,6 +1947,10 @@ external/fastjet/version.hh: \
 	@touch $@
 
 modules/MomentumSmearing.h: \
+	classes/DelphesModule.h
+	@touch $@
+
+modules/CandidateFilter.h: \
 	classes/DelphesModule.h
 	@touch $@
 
