@@ -107,8 +107,10 @@ void Efficiency::Process()
     pt = candidateMomentum.Pt();
     e = candidateMomentum.E();
 
+    double rnd_numb = gRandom->Uniform();
+    double eff = fFormula->Eval(pt, eta, phi, e);
     // apply an efficency formula
-    if(gRandom->Uniform() > fFormula->Eval(pt, eta, phi, e)) continue;
+    if(rnd_numb > eff) continue;
 
     fOutputArray->Add(candidate);
   }
