@@ -25,6 +25,7 @@
 #include "TDatabasePDG.h"
 #include "TLorentzVector.h"
 #include "TMatrixT.h"
+#include "TLatex.h"
 #include "TVector3.h"
 
 #include "TAxis.h"
@@ -108,6 +109,8 @@ void VertexFinderDAClusterizerZT::Init()
   fMuOutlayer      = GetDouble("MuOutlayer", 4);     // Outlayer rejection exponent
   fMinTrackProb    = GetDouble("MinTrackProb", 0.6); // Minimum probability to be assigned at a vertex
   fMinNTrack       = GetInt("MinNTrack", 10);        // Minimum number of tracks per vertex
+
+  fFigFolderPath   = GetString("DebugFigPath", ".");
 
   fInputArray = ImportArray(GetString("InputArray", "TrackSmearing/tracks"));
   fItInputArray = fInputArray->MakeIterator();
@@ -1141,7 +1144,7 @@ void VertexFinderDAClusterizerZT::plot_status(double beta, vertex_t &vtx, tracks
   // leg->Draw();
 
   c_2Dspace->SetGrid();
-  c_2Dspace->SaveAs(Form("~/Desktop/debug/c_2Dspace_beta%010.0f-%s%d.png", 1E7*beta, flag, n_it));
+  c_2Dspace->SaveAs(fFigFolderPath + Form("/c_2Dspace_beta%010.0f-%s%d.png", 1E7*beta, flag, n_it));
 
   delete c_2Dspace;
 }
@@ -1183,7 +1186,7 @@ void VertexFinderDAClusterizerZT::plot_status_end(vertex_t &vtx, tracks_t &tks)
     gr->SetMarkerStyle(marker);
 
     int idx = tks.tt[i]->ClusterIndex;
-    int color = idx>=0 ? MyPalette[idx] : 16;
+    int color = idx>=0 ? MyPalette[idx] : 13;
     gr->SetMarkerColor(color);
     gr->SetLineColor(color);
 
@@ -1210,7 +1213,7 @@ void VertexFinderDAClusterizerZT::plot_status_end(vertex_t &vtx, tracks_t &tks)
     gr->SetNameTitle(Form("grv%d",k), Form("grv%d",k));
 
     gr->SetMarkerStyle(41);
-    gr->SetMarkerSize(4);
+    gr->SetMarkerSize(2.);
     gr->SetMarkerColor(MyPalette[k]);
 
     gr->Draw("P");
@@ -1218,20 +1221,32 @@ void VertexFinderDAClusterizerZT::plot_status_end(vertex_t &vtx, tracks_t &tks)
 
   fItInputGenVtx->Reset();
   TGraph* gr_genvtx = new TGraph(fInputGenVtx->GetEntriesFast());
+  TGraph* gr_genPV = new TGraph(1);
   Candidate *candidate;
   unsigned int k = 0;
   while((candidate = static_cast<Candidate*>(fItInputGenVtx->Next())))
   {
-    gr_genvtx->SetPoint(k, candidate->Position.T()*1E9/c_light, candidate->Position.Z());
+    if(k == 0 ) {
+      gr_genPV->SetPoint(k, candidate->Position.T()*1E9/c_light, candidate->Position.Z());
+    }
+    else gr_genvtx->SetPoint(k, candidate->Position.T()*1E9/c_light, candidate->Position.Z());
+
     k++;
   }
-  gr_genvtx->SetMarkerStyle(33);
-  gr_genvtx->SetMarkerColor(6);
-  gr_genvtx->SetMarkerSize(2.);
+  gr_genvtx->SetMarkerStyle(20);
+  gr_genvtx->SetMarkerColorAlpha(kBlack, 0.8);
+  gr_genvtx->SetMarkerSize(.8);
   gr_genvtx->Draw("PE1");
+  gr_genPV->SetMarkerStyle(33);
+  gr_genPV->SetMarkerColorAlpha(kBlack, 1);
+  gr_genPV->SetMarkerSize(2.5);
+  gr_genPV->Draw("PE1");
+
+  // auto note =  new TLatex();
+  // note->DrawLatexNDC(0.5, 0.8, Form("#splitline{Vertexes Reco = %d }{Vertexes gen = %d}", vtx.getSize(), k) );
 
   c_out->SetGrid();
-  c_out->Print(Form("~/Desktop/debug/c_final.png"));
+  c_out->SaveAs(fFigFolderPath + Form("/c_final.root"));
   delete c_out;
 }
 
@@ -1291,7 +1306,7 @@ void VertexFinderDAClusterizerZT::plot_split_crush(double zn, double tn, vertex_
 
 
   c_2Dspace->SetGrid();
-  c_2Dspace->SaveAs(Form("~/Desktop/debug/crush_splitting.png"));
+  c_2Dspace->SaveAs(fFigFolderPath + Form("/crush_splitting.png"));
 
   delete c_2Dspace;
 }

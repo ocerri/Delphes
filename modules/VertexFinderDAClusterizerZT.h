@@ -287,7 +287,7 @@ class VertexFinderDAClusterizerZT: public DelphesModule
     TObjArray *fInputGenVtx;
     TIterator *fItInputGenVtx;
 
-
+    TString fFigFolderPath = "";
 };
 
 #endif
