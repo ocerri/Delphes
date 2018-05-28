@@ -135,7 +135,7 @@ void ConvertInput(Long64_t eventCounter, Pythia8::Pythia *pythia,
     else if(abs(pid) == 1006333) candidate->Charge = 0;
     else {
       candidate->Charge = -999;
-      cout << "[WARNING] Unrecognised particle" << endl;
+      cout << "[WARNING] Unrecognised particle. PID: " << pid << endl;
     }
 
     candidate->Mass = mass;
