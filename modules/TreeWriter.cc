@@ -232,6 +232,9 @@ void TreeWriter::ProcessParticles(ExRootTreeBranch *branch, TObjArray *array)
     entry->T = candidate->Position.T()*1.0E-3/c_light;
 
     entry->VertexIndex = candidate->ClusterIndex;
+
+    entry->weight_puppi = candidate->weight_puppi;
+
   }
 }
 

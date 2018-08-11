@@ -164,6 +164,8 @@ public:
 
   Int_t VertexIndex; // reference to Gen Vertex
 
+  Float_t weight_puppi;
+
   static CompBase *fgCompare; //!
   const CompBase *GetCompare() const { return fgCompare; }
 
@@ -638,6 +640,7 @@ class Candidate: public SortableObject
     // N-subjettiness variables
 
     Float_t Tau[5];
+    Float_t weight_puppi;
 
     // Other Substructure variables
 

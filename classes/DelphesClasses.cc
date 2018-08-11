@@ -335,6 +335,8 @@ void Candidate::Copy(TObject &obj) const
   object.Tau[3] = Tau[3];
   object.Tau[4] = Tau[4];
 
+  object.weight_puppi = weight_puppi;
+
   object.TrimmedP4[0] = TrimmedP4[0];
   object.TrimmedP4[1] = TrimmedP4[1];
   object.TrimmedP4[2] = TrimmedP4[2];
