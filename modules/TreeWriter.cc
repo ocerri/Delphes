@@ -199,14 +199,14 @@ void TreeWriter::ProcessParticles(ExRootTreeBranch *branch, TObjArray *array)
     entry->Status = candidate->Status;
     entry->IsPU = candidate->IsPU;
 
-    entry->M1 = candidate->M1;
-    entry->M2 = candidate->M2;
-
-    entry->D1 = candidate->D1;
-    entry->D2 = candidate->D2;
+    // entry->M1 = candidate->M1;
+    // entry->M2 = candidate->M2;
+    //
+    // entry->D1 = candidate->D1;
+    // entry->D2 = 100;
 
     entry->Charge = candidate->Charge;
-    entry->Mass = candidate->Mass;
+    // entry->Mass = candidate->Mass;
 
     entry->E = momentum.E();
     entry->Px = momentum.Px();
@@ -216,9 +216,7 @@ void TreeWriter::ProcessParticles(ExRootTreeBranch *branch, TObjArray *array)
     entry->D0            = candidate->D0;
     entry->DZ            = candidate->DZ;
     entry->P             = candidate->P;
-    entry->PT            = candidate->PT;
     entry->CtgTheta      = candidate->CtgTheta;
-    entry->Phi           = candidate->Phi;
 
     entry->Eta = eta;
     entry->Phi = momentum.Phi();
@@ -226,14 +224,14 @@ void TreeWriter::ProcessParticles(ExRootTreeBranch *branch, TObjArray *array)
 
     entry->Rapidity = rapidity;
 
-    entry->X = candidate->Position.X();
-    entry->Y = candidate->Position.Y();
-    entry->Z = candidate->Position.Z();
-    entry->T = candidate->Position.T()*1.0E-3/c_light;
+    // entry->X = candidate->Position.X();
+    // entry->Y = candidate->Position.Y();
+    // entry->Z = candidate->Position.Z();
+    // entry->T = candidate->Position.T()*1.0E-3/c_light;
 
-    entry->VertexIndex = candidate->ClusterIndex;
+    // entry->VertexIndex = candidate->ClusterIndex;
 
-    entry->weight_puppi = candidate->weight_puppi;
+    // entry->weight_puppi = candidate->weight_puppi;
 
   }
 }

@@ -131,15 +131,15 @@ public:
   Int_t Status; // particle status | hepevt.isthep[number]
   Int_t IsPU; // 0 or 1 for particles from pile-up interactions
 
-  Int_t M1; // particle 1st mother | hepevt.jmohep[number][0] - 1
-  Int_t M2; // particle 2nd mother | hepevt.jmohep[number][1] - 1
+  // Int_t M1; // particle 1st mother | hepevt.jmohep[number][0] - 1
+  // Int_t M2; // particle 2nd mother | hepevt.jmohep[number][1] - 1
 
-  Int_t D1; // particle 1st daughter | hepevt.jdahep[number][0] - 1
-  Int_t D2; // particle last daughter | hepevt.jdahep[number][1] - 1
+  // Int_t D1; // particle 1st daughter | hepevt.jdahep[number][0] - 1
+  // Int_t D2; // particle last daughter | hepevt.jdahep[number][1] - 1
 
   Int_t Charge; // particle charge
 
-  Float_t Mass; // particle mass
+  // Float_t Mass; // particle mass
 
   Float_t E; // particle energy | hepevt.phep[number][3]
   Float_t Px; // particle momentum vector (x component) | hepevt.phep[number][0]
@@ -157,14 +157,14 @@ public:
   Float_t D0; // particle transverse impact parameter
   Float_t DZ; // particle longitudinal impact parameter
 
-  Float_t T; // particle vertex position (t component) | hepevt.vhep[number][3]
-  Float_t X; // particle vertex position (x component) | hepevt.vhep[number][0]
-  Float_t Y; // particle vertex position (y component) | hepevt.vhep[number][1]
-  Float_t Z; // particle vertex position (z component) | hepevt.vhep[number][2]
+  // Float_t T; // particle vertex position (t component) | hepevt.vhep[number][3]
+  // Float_t X; // particle vertex position (x component) | hepevt.vhep[number][0]
+  // Float_t Y; // particle vertex position (y component) | hepevt.vhep[number][1]
+  // Float_t Z; // particle vertex position (z component) | hepevt.vhep[number][2]
 
-  Int_t VertexIndex; // reference to Gen Vertex
+  // Int_t VertexIndex; // reference to Gen Vertex
 
-  Float_t weight_puppi;
+  // Float_t weight_puppi;
 
   static CompBase *fgCompare; //!
   const CompBase *GetCompare() const { return fgCompare; }
