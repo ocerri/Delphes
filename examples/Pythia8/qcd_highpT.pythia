@@ -1,0 +1,14 @@
+! This file contains commands to be read in for a Pythia8 run.
+! Lines not beginning with a letter or digit are comments.
+
+! 1) Settings that could be used in a main program, if desired.
+Main:numberOfEvents = 100       ! number of events to generate
+
+! 2) LHC beams parameter settings.
+Beams:idA = 2212                   ! first beam, p = 2212, pbar = -2212
+Beams:idB = 2212                   ! second beam, p = 2212, pbar = -2212
+Beams:eCM = 13000.                 ! CM energy of collision
+
+! 3) Settings for the hard-process generation
+HardQCD:all = on          ! QCD
+PhaseSpace:pTHatMin = 100.

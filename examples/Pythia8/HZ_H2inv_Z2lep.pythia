@@ -1,0 +1,41 @@
+! This file contains commands to be read in for a Pythia8 run.
+! Lines not beginning with a letter or digit are comments.
+
+! 1) Settings parameters used in a main program
+Main:numberOfEvents = 1000       ! number of events to generate
+Main:timesAllowErrors = 30         ! max number of allowed errors
+
+! 2) Settings related to output in init(), next() and stat().
+Init:showChangedSettings = on      ! list changed settings
+Init:showAllSettings = off         ! list all settings
+Init:showChangedParticleData = on  ! list changed particle data
+Init:showAllParticleData = off     ! list all particle data
+Next:numberCount = 1000            ! print message every n events
+Next:numberShowLHA = 1             ! print LHA information n times
+Next:numberShowInfo = 1            ! print event information n times
+Next:numberShowProcess = 1         ! print process record n times
+Next:numberShowEvent = 1           ! print event record n times
+Stat:showPartonLevel = on          ! additional statistics on MPI
+
+! 3) LHC beams parameter settings.
+Beams:idA = 11                     ! first beam, p = 2212, pbar = -2212
+Beams:idB = -11                    ! second beam, p = 2212, pbar = -2212
+Beams:eCM = 240.                   ! CM energy of collision for HZ run
+
+! 5) Settings for the hard-process generation
+SUSY:all = off                     ! Switches on ALL (~400) SUSY processes
+SLHA:file = cards/Invisible.slha ! SLHA file
+SLHA:useDecayTable = on            ! Read in SLHA DECAY tables [change for full scan]
+SLHA:readFrom = 2
+SLHA:verbose = 0                   ! verbosity
+# set HIGGS decays
+HiggsSM:ffbar2HZ = on
+23:onMode = off                    ! switch off all Z decays
+23:onIfAny = 11 12 13 14 15 16     ! switch on Z->lep only
+# HIGGS decay in .slha file
+
+! 5) Settings for the event generation process in the Pythia8 library.
+PartonLevel:MPI = on               ! no multiple interactions
+PartonLevel:ISR = on               ! no initial-state radiation
+PartonLevel:FSR = on               ! no final-state radiation
+HadronLevel:Hadronize = on         ! no hadronization
