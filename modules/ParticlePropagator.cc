@@ -148,9 +148,9 @@ void ParticlePropagator::Process()
     Double_t z = candidatePosition.Z()*1.0E-3;
 
     // check that particle position is inside the cylinder
-    if(fVerbose && (TMath::Hypot(x, y) > fRadius || TMath::Abs(z) > fHalfLengthMax))
+    if(TMath::Hypot(x, y) > fRadius || TMath::Abs(z) > fHalfLengthMax)
     {
-      cout << "Warning: particle produced outside the detector and will not be firther taken into account" << endl;
+      if(fVerbose) {cout << "Warning: particle produced outside the detector and will not be firther taken into account" << endl;}
       continue;
     }
 
@@ -175,7 +175,10 @@ void ParticlePropagator::Process()
       Double_t rdp = x*px + y*py;
 
       Double_t discr = fRadius*fRadius*pt*pt - rxp*rxp;
-      if (discr < 0 && fVerbose) {cout << "Discriminant smaller than 0 --> Impossible must be some bug or error" << endl;}
+      if (discr < 0) {
+           if(fVerbose) {cout << "Discriminant smaller than 0 --> Impossible must be some bug or error" << endl;}
+           continue;
+      }
 
       Double_t t_R = e * (sqrt(discr) - rdp) / (c_light * pt * pt);
       Double_t t_z = e * (TMath::Sign(fHalfLengthMax, pz) - z) / ( c_light * pz);
