@@ -71,7 +71,7 @@ void TimeSmearing::Init()
   // read resolution formula
 
   fTimeResolution = GetDouble("TimeResolution", 3.0E-11);
-  fEtaMax = GetDouble("EtaMax", 3.0);
+  fEtaMax = GetDouble("EtaMax", 9999.);
   // import input array
 
   fInputArray = ImportArray(GetString("InputArray", "MuonMomentumSmearing/muons"));

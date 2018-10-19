@@ -29,7 +29,7 @@ set ExecutionPath {
 
   ECal
   HCal
-  
+
   PhotonEnergySmearing
   ElectronFilter
   TrackPileUpSubtractor
@@ -98,7 +98,7 @@ module PileUpMerger PileUpMerger {
 
   # pre-generated minbias input file
   set PileUpFile ../eos/cms/store/group/upgrade/delphes/PhaseII/MinBias_100k.pileup
-  
+
   # average expected pile up
   set MeanPileUp 200
 
@@ -264,7 +264,6 @@ module MomentumSmearing MuonMomentumSmearing {
 ##############
 
 module Merger TrackMerger {
-# add InputArray InputArray
   add InputArray ChargedHadronMomentumSmearing/chargedHadrons
   add InputArray ElectronEnergySmearing/electrons
   add InputArray MuonMomentumSmearing/muons
@@ -458,7 +457,7 @@ module SimpleCalorimeter HCal {
   add EnergyFraction {310} {0.7}
   add EnergyFraction {3122} {0.7}
 
-# set ResolutionFormula {resolution formula as a function of eta and energy}
+  # set ResolutionFormula {resolution formula as a function of eta and energy}
   set ResolutionFormula {                    (abs(eta) <= 1.5) * sqrt(energy^2*0.05^2 + energy*1.00^2) + \
 						   (abs(eta) > 1.5 && abs(eta) <= 3.0) * sqrt(energy^2*0.05^2 + energy*1.00^2) + \
 						   (abs(eta) > 3.0 && abs(eta) <= 5.0) * sqrt(energy^2*0.11^2 + energy*2.80^2)}
@@ -498,7 +497,7 @@ module PdgCodeFilter ElectronFilter {
 ##########################
 
 module TrackPileUpSubtractor TrackPileUpSubtractor {
-# add InputArray InputArray OutputArray
+  # add InputArray InputArray OutputArray
   add InputArray HCal/eflowTracks eflowTracks
   add InputArray ElectronFilter/electrons electrons
   add InputArray MuonMomentumSmearing/muons muons
@@ -515,7 +514,7 @@ module TrackPileUpSubtractor TrackPileUpSubtractor {
 ###################################################
 
 module Merger TowerMerger {
-# add InputArray InputArray
+  # add InputArray InputArray
   add InputArray ECal/ecalTowers
   add InputArray HCal/hcalTowers
   set OutputArray towers
@@ -527,7 +526,7 @@ module Merger TowerMerger {
 ####################
 
 module Merger NeutralEFlowMerger {
-# add InputArray InputArray
+  # add InputArray InputArray
   add InputArray PhotonEnergySmearing/eflowPhotons
   add InputArray HCal/eflowNeutralHadrons
   set OutputArray eflowTowers
@@ -539,7 +538,7 @@ module Merger NeutralEFlowMerger {
 ####################
 
 module Merger EFlowMerger {
-# add InputArray InputArray
+  # add InputArray InputArray
   add InputArray HCal/eflowTracks
   add InputArray PhotonEnergySmearing/eflowPhotons
   add InputArray HCal/eflowNeutralHadrons
@@ -551,7 +550,6 @@ module Merger EFlowMerger {
 ##################################
 
 module Merger EFlowMergerAllTracks {
-# add InputArray InputArray
   add InputArray TrackMerger/tracks
   add InputArray PhotonEnergySmearing/eflowPhotons
   add InputArray HCal/eflowNeutralHadrons
@@ -623,8 +621,6 @@ module Merger RunPUPPI {
 ###################
 
 module Merger MissingET {
-# add InputArray InputArray
-#  add InputArray RunPUPPI/PuppiParticles
   add InputArray EFlowMerger/eflow
   set MomentumOutputArray momentum
 }
@@ -641,8 +637,6 @@ module Merger PuppiMissingET {
 ###################
 
 module Merger GenPileUpMissingET {
-# add InputArray InputArray
-#  add InputArray RunPUPPI/PuppiParticles
   add InputArray ParticlePropagator/stableParticles
   set MomentumOutputArray momentum
 }
@@ -652,7 +646,6 @@ module Merger GenPileUpMissingET {
 ##################
 
 module Merger ScalarHT {
-# add InputArray InputArray
   add InputArray RunPUPPI/PuppiParticles
   set EnergyOutputArray energy
 }
@@ -700,7 +693,6 @@ module FastJetFinder GenJetFinder {
 
 module Merger GenMissingET {
 
-# add InputArray InputArray
   add InputArray NeutrinoFilter/filteredParticles
   set MomentumOutputArray momentum
 }
@@ -712,7 +704,6 @@ module Merger GenMissingET {
 ############
 
 module FastJetFinder FastJetFinder {
-#  set InputArray TowerMerger/towers
   set InputArray RunPUPPI/PuppiParticles
 
   set OutputArray jets
@@ -731,7 +722,7 @@ module FastJetFinder FastJetFinder {
 ############
 
 module FastJetFinder FatJetFinder {
-#  set InputArray TowerMerger/towers
+  #  set InputArray TowerMerger/towers
   set InputArray RunPUPPI/PuppiParticles
 
   set OutputArray jets
@@ -1076,4 +1067,3 @@ module TreeWriter TreeWriter {
   add Branch GenPileUpMissingET/momentum GenPileUpMissingET MissingET
   add Branch ScalarHT/energy ScalarHT ScalarHT
 }
-
