@@ -26,6 +26,8 @@ class VertexFinderDAClusterizerZT: public DelphesModule
     {
       public:
         std::vector<double> z;      // z-coordinate at point of closest approach to the beamline [mm]
+        std::vector<double> r;      // z-coordinate at point of closest approach to the beamline [mm]
+
         std::vector<double> t;      // t-coordinate at point of closest approach to the beamline  [ps]
 
         std::vector<double> dz2_o;    //1 over the squared error of z(pca)

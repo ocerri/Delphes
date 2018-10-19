@@ -49,7 +49,7 @@ public:
 
 private:
 
-  Double_t fRadius, fRadius2, fHalfLength, fHalfLengthMax;
+  Double_t fRadius, fHalfLength, fHalfLengthMax;
   Double_t fBz;
 
   TIterator *fItInputArray; //!
@@ -61,6 +61,8 @@ private:
   TObjArray *fChargedHadronOutputArray; //!
   TObjArray *fElectronOutputArray; //!
   TObjArray *fMuonOutputArray; //!
+
+  Int_t fVerbose;
 
   ClassDef(ParticlePropagator, 1)
 };

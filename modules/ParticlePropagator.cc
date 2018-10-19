@@ -73,7 +73,6 @@ ParticlePropagator::~ParticlePropagator()
 void ParticlePropagator::Init()
 {
   fRadius = GetDouble("Radius", 1.0);
-  fRadius2 = fRadius*fRadius;
   fHalfLength = GetDouble("HalfLength", 3.0);
   fBz = GetDouble("Bz", 0.0);
   if(fRadius < 1.0E-2)
@@ -88,6 +87,7 @@ void ParticlePropagator::Init()
   }
 
   fHalfLengthMax = GetDouble("HalfLengthMax", fHalfLength);
+  fVerbose = GetInt("Verbose", 0);
 
   // import array with output from filter/classifier module
 
@@ -148,7 +148,7 @@ void ParticlePropagator::Process()
     Double_t z = candidatePosition.Z()*1.0E-3;
 
     // check that particle position is inside the cylinder
-    if(TMath::Hypot(x, y) > fRadius || TMath::Abs(z) > fHalfLengthMax)
+    if(fVerbose && (TMath::Hypot(x, y) > fRadius || TMath::Abs(z) > fHalfLengthMax))
     {
       cout << "Warning: particle produced outside the detector and will not be firther taken into account" << endl;
       continue;
@@ -170,32 +170,43 @@ void ParticlePropagator::Process()
 
     if(TMath::Abs(q) < 1.0E-9 || TMath::Abs(fBz) < 1.0E-9)
     {
-      // solve pt2*t^2 + 2*(px*x + py*y)*t - (fRadius2 - x*x - y*y) = 0
-      Double_t tmp = px*y - py*x;
-      Double_t discr2 = pt2*fRadius2 - tmp*tmp;
+      // solve vt2*t^2 + 2*(vx*x + vy*y)*t - (fRadius2 - x*x - y*y) = 0
+      Double_t rxp = x*py - y*px;
+      Double_t rdp = x*px + y*py;
 
-      if(discr2 < 0.0)
-      {
-        // no solutions
-        continue;
-      }
+      Double_t discr = fRadius*fRadius*pt*pt - rxp*rxp;
+      if (discr < 0 && fVerbose) {cout << "Discriminant smaller than 0 --> Impossible must be some bug or error" << endl;}
 
-      tmp = px*x + py*y;
-      Double_t t1 = (-tmp + TMath::Sqrt(discr2))/pt2;
-      Double_t t2 = (-tmp - TMath::Sqrt(discr2))/pt2;
-      Double_t t = (t1 < 0.0) ? t2 : t1;
+      Double_t t_R = e * (sqrt(discr) - rdp) / (c_light * pt * pt);
+      Double_t t_z = e * (TMath::Sign(fHalfLengthMax, pz) - z) / ( c_light * pz);
 
-      Double_t z_t = z + pz*t;
-      if(TMath::Abs(z_t) > fHalfLength)
-      {
-        Double_t t3 = (+fHalfLength - z) / pz;
-        Double_t t4 = (-fHalfLength - z) / pz;
-        t = (t3 < 0.0) ? t4 : t3;
-      }
+      Double_t t = TMath::Min(t_R, t_z);
 
-      Double_t x_t = x + px*t;
-      Double_t y_t = y + py*t;
-      z_t = z + pz*t;
+      // Double_t tmp = px*y - py*x;
+      // Double_t discr2 = pt2*fRadius*fRadius - tmp*tmp;
+      //
+      // if(discr2 < 0.0)
+      // {
+      //   // no solutions
+      //   continue;
+      // }
+      //
+      // tmp = px*x + py*y;
+      // Double_t t1 = (-tmp + TMath::Sqrt(discr2))/pt2;
+      // Double_t t2 = (-tmp - TMath::Sqrt(discr2))/pt2;
+      // Double_t t = (t1 < 0.0) ? t2 : t1;
+      //
+      // Double_t z_t = z + pz*t;
+      // if(TMath::Abs(z_t) > fHalfLength)
+      // {
+      //   Double_t t3 = (+fHalfLength - z) / pz;
+      //   Double_t t4 = (-fHalfLength - z) / pz;
+      //   t = (t3 < 0.0) ? t4 : t3;
+      // }
+
+      Double_t x_t = x + px*t*c_light/e;
+      Double_t y_t = y + py*t*c_light/e;
+      Double_t z_t = z + pz*t*c_light/e;
 
       Double_t l = TMath::Sqrt( (x_t - x)*(x_t - x) + (y_t - y)*(y_t - y) + (z_t - z)*(z_t - z));
 
@@ -203,7 +214,7 @@ void ParticlePropagator::Process()
       candidate = static_cast<Candidate*>(candidate->Clone());
 
       candidate->InitialPosition = candidatePosition;
-      candidate->Position.SetXYZT(x_t*1.0E3, y_t*1.0E3, z_t*1.0E3, candidatePosition.T() + t*e*1.0E3);
+      candidate->Position.SetXYZT(x_t*1.0E3, y_t*1.0E3, z_t*1.0E3, candidatePosition.T() + t*c_light*1.0E3);
       candidate->L = l*1.0E3;
 
       candidate->Momentum = candidateMomentum;
